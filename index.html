@@ -366,11 +366,13 @@
           // Team meta (optional)
           if (msg.teams) {
             const t = msg.teams;
+          
             if (t.homeName !== undefined) qs('#homeName').textContent = t.homeName || '';
             if (t.awayName !== undefined) qs('#awayName').textContent = t.awayName || '';
-            if (t.homeLogo) qs('#homeLogo').src = t.homeLogo;
-            if (t.awayLogo) qs('#awayLogo').src = t.awayLogo;
-            if (t.sponsor) qs('#sponsorLogo').src = t.sponsor;
+          
+            if (t.homeLogo) { const el = qs('#homeLogo'); el.src = t.homeLogo; el.style.visibility = 'visible'; }
+            if (t.awayLogo) { const el = qs('#awayLogo'); el.src = t.awayLogo; el.style.visibility = 'visible'; }
+            if (t.sponsor)  { const el = qs('#sponsorLogo'); el.src = t.sponsor;  el.style.visibility = 'visible'; }
           }
           if (msg.score) {
             if (typeof msg.score.home === 'number') homeScoreEl.textContent = String(msg.score.home);
