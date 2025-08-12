@@ -58,9 +58,9 @@
     }
 
     .logo {
-      height: clamp(52px, 10vw, 120px);
-      width: auto;
-      object-fit: contain;
+      width: 220px;           /* ← fixed width */
+      height: 272px;          /* ← fixed height */
+      object-fit: contain;    /* keep aspect; letterbox if needed */
       filter: drop-shadow(0 4px 8px rgba(0,0,0,.5));
       justify-self: start;
     }
