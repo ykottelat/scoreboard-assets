@@ -67,16 +67,27 @@
     .logo.away { justify-self: end; }
 
     .game-clock {
+      position: absolute;
+      left: 282px;     /* x */
+      top: 0px;        /* y */
+      width: 460px;
+      height: 200px;
+
+      display: grid;           /* center the text in the box */
+      place-items: center;
+
       font-variant-numeric: tabular-nums;
       letter-spacing: .04em;
       text-shadow: var(--digit-shadow);
       font-weight: 700;
-      font-size: clamp(28px, 8vmin, 200px);
+      font-size: clamp(28px, 8vmin, 200px);  /* cap at 200 as requested */
       line-height: 1;
-      padding: .1em .35em;
+
+      padding: 0;              /* no extra padding since we set fixed size */
       border-radius: 16px;
       border: 2px solid transparent;
       background: linear-gradient(180deg, rgba(255,255,255,.08), rgba(255,255,255,.02));
+      z-index: 10;             /* sit above grid content */
     }
 
     /* Middle row: scores + sponsor */
