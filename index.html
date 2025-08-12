@@ -4,183 +4,154 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>HTML5 Scoreboard</title>
+
+  <!-- Droid Sans Mono -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Droid+Sans+Mono&display=swap" rel="stylesheet">
+
   <style>
-    :root {
-      --bg: #0b0b0b;
-      --fg: #f5f5f5;
-      --muted: #bdbdbd;
-      --accent: #e53935;
-      --digit-shadow: 0 0 12px rgba(255,255,255,0.15);
-      
-      --clock-x: 282px;
-      --clock-w: 460px;
-      --clock-h: 200px;
+    :root{
+      /* Colors */
+      --bg:#0b0b0b; --fg:#f5f5f5; --muted:#bdbdbd; --accent:#e53935;
+      --digit-shadow:0 0 12px rgba(255,255,255,.15);
 
-      --logo-w: 220px;
-      --logo-h: 272px;
-
-      --home-x: 42px;      /* where you want the home logo */
-      --gap-after-clock: 20px; /* space between clock and away logo */
+      /* Fallback pixel layout (1024×576 design) */
+      --clock-x:282px; --clock-w:460px; --clock-h:200px;
+      --logo-w:220px; --logo-h:272px;
+      --home-x:42px; --gap-after-clock:20px;
     }
 
-    *, *::before, *::after { box-sizing: border-box; }
-    html, body {
-      width: 100%;
-      max-width: 100%;
-      overflow-x: hidden;   /* <- hide any horizontal scroll */
-    }
-    body {
-      margin: 0;
-      font-family: 'Droid Sans Mono', ui-monospace, SFMono-Regular, Menlo, Consolas, 'Liberation Mono', 'Courier New', monospace;
-      background: var(--bg);
-      color: var(--fg);
-      display: grid;
-      place-items: center;
+    /* Global: prevent horizontal scrollbars */
+    *,*::before,*::after{ box-sizing:border-box; }
+    html,body{ width:100%; max-width:100%; overflow-x:hidden; height:100%; }
+    body{
+      margin:0;
+      font-family:'Droid Sans Mono', ui-monospace, SFMono-Regular, Menlo, Consolas, 'Liberation Mono', 'Courier New', monospace;
+      background:var(--bg); color:var(--fg);
+      display:grid; place-items:center;
     }
 
-    /* Layout */
-    .board {
-      /* Fit inside the viewport, never exceed 1024×576, always 16:9 */
-      width: min(100dvw, 1024px, calc(100vh * (16/9)));
-      aspect-ratio: 16 / 9;
-      height: auto;
+    /* Board */
+    .board{
+      /* Fit viewport, cap at 1024×576, keep 16:9 */
+      width:min(100dvw, 1024px, calc(100dvh * (16/9)));
+      aspect-ratio:16/9; height:auto;
 
-      background: #000000d0;
-      border-radius: 24px;
-      box-shadow: 0 20px 60px rgba(0,0,0,.45) inset, 0 10px 30px rgba(0,0,0,.35);
-      position: relative;
-      overflow: hidden;
-      padding: clamp(8px, 2vw, 24px);
-      display: grid;
-      grid-template-rows: auto 1fr auto;
-      background: rgba(13, 71, 161, 0.92); /* blue with slight transparency */
-    }
+      position:relative; overflow:hidden;
+      padding:clamp(8px,2vw,24px);
+      display:grid; grid-template-rows:auto 1fr auto;
 
-    /* Top row: logos + game clock */
-    .top {
-      display: grid;
-      grid-template-columns: 1fr auto 1fr;
-      align-items: center;
-      gap: clamp(8px, 2vw, 24px);
+      border-radius:24px;
+      box-shadow:0 20px 60px rgba(0,0,0,.45) inset, 0 10px 30px rgba(0,0,0,.35);
+      background:rgba(13,71,161,.92); /* blue board */
+
+      /* enable container query units (cqw/cqh) */
+      container-type:size;
     }
 
-    .logo {
-      position: absolute;
-      top: 0;
-      width: var(--logo-w);
-      height: var(--logo-h);
-      object-fit: contain;
-      filter: drop-shadow(0 4px 8px rgba(0,0,0,.5));
+    .top{ display:grid; grid-template-columns:1fr auto 1fr; align-items:center; gap:clamp(8px,2vw,24px); }
+
+    /* Game clock: fixed box, placed at (282,0), width 460, height 200 */
+    .game-clock{
+      position:absolute; left:var(--clock-x); top:0;
+      width:var(--clock-w); height:var(--clock-h);
+      display:grid; place-items:center;
+      font-variant-numeric:tabular-nums; letter-spacing:.04em; text-shadow:var(--digit-shadow);
+      font-weight:700; font-size:clamp(28px, 8vmin, 200px); line-height:1;
+      padding:0; border-radius:16px; border:2px solid transparent;
+      background:linear-gradient(180deg, rgba(255,255,255,.08), rgba(255,255,255,.02));
+      z-index:10;
     }
-    .logo.home {
-      left: var(--home-x);
+
+    /* Club logos (absolute at top) */
+    .logo{
+      position:absolute; top:0;
+      width:var(--logo-w); height:var(--logo-h);
+      object-fit:contain; filter:drop-shadow(0 4px 8px rgba(0,0,0,.5));
     }
-    .logo.away {
-      left: calc(var(--clock-x) + var(--clock-w) + var(--gap-after-clock));
-    }
-    
-    .game-clock {
-      position: absolute;
-      left: var(--clock-x);
-      top: 0;
-      width: var(--clock-w);
-      height: var(--clock-h);
-      display: grid; place-items: center;
-      font-variant-numeric: tabular-nums;
-      letter-spacing: .04em;
-      text-shadow: var(--digit-shadow);
-      font-weight: 700;
-      font-size: clamp(28px, 8vmin, 200px);
-      line-height: 1;
-      padding: 0;
-      border-radius: 16px;
-      border: 2px solid transparent;
-      background: linear-gradient(180deg, rgba(255,255,255,.08), rgba(255,255,255,.02));
-      z-index: 10;
-    }
+    .logo.home{ left:var(--home-x); }
+    .logo.away{ left:calc(var(--clock-x) + var(--clock-w) + var(--gap-after-clock)); }
 
     /* Middle row: scores + sponsor */
-    .middle {
-      display: grid;
-      grid-template-columns: 1fr auto 1fr;
-      align-items: center;
+    .middle{ display:grid; grid-template-columns:1fr auto 1fr; align-items:center; }
+    .score{
+      font-variant-numeric:tabular-nums; font-weight:800; text-shadow:var(--digit-shadow);
+      font-size:clamp(48px, 14vmin, 200px); line-height:1;
+    }
+    .score.home{ justify-self:start; } .score.away{ justify-self:end; }
+
+    .sponsor{ opacity:.85; display:grid; place-items:center; }
+    .sponsor img{
+      width:520px; height:254px; object-fit:contain;
+      filter:drop-shadow(0 6px 16px rgba(0,0,0,.6));
     }
 
-    .score {
-      font-variant-numeric: tabular-nums;
-      font-weight: 800;
-      text-shadow: var(--digit-shadow);
-      font-size: clamp(48px, 14vmin, 200px);
-      line-height: 1;
-    }
-    .score.home { justify-self: start; }
-    .score.away { justify-self: end; }
+    /* Bottom time-of-day */
+    .bottom{ display:grid; place-items:center; }
+    .tod{ font-variant-numeric:tabular-nums; color:var(--muted); font-size:clamp(18px,5vw,40px); letter-spacing:.12em; text-shadow:0 0 10px rgba(0,0,0,.6); }
 
-    .sponsor {
-      opacity: .85;
-      display: grid;
-      place-items: center;
+    /* Team name labels (optional) */
+    .labels{
+      position:absolute; left:0; right:0; top:50%; transform:translateY(-50%);
+      pointer-events:none; display:grid; grid-template-columns:1fr 1fr;
+      padding:0 clamp(8px,2vw,24px); font-size:clamp(10px,2.2vw,22px); color:#d3d3d3; opacity:.85;
     }
-    .sponsor img {
-      width: 520px;        /* fixed width  */
-      height: 254px;       /* fixed height */
-      object-fit: contain; /* keep aspect; letterbox if needed */
-      filter: drop-shadow(0 6px 16px rgba(0,0,0,.6));
-    }
+    .labels div{ white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+    .labels .home{ justify-self:start; } .labels .away{ justify-self:end; }
 
-    /* Bottom row: time of day */
-    .bottom {
-      display: grid;
-      place-items: center;
+    /* Controls */
+    .controls{
+      position:absolute; left:50%; transform:translateX(-50%);
+      bottom:8px; display:flex; gap:8px; align-items:center;
+      background:rgba(255,255,255,.06); border:1px solid rgba(255,255,255,.12);
+      padding:6px 10px; border-radius:999px; backdrop-filter:blur(6px);
+      font-size:14px; color:#eee;
     }
-    .tod {
-      font-variant-numeric: tabular-nums;
-      color: var(--muted);
-      font-size: clamp(18px, 5vw, 40px);
-      letter-spacing: .12em;
-      text-shadow: 0 0 10px rgba(0,0,0,.6);
+    .controls button, .controls input[type="number"]{
+      background:rgba(0,0,0,.35); border:1px solid rgba(255,255,255,.18);
+      color:#fff; padding:6px 10px; border-radius:10px; font-size:14px;
     }
+    .controls .spacer{ width:1px; height:20px; background:rgba(255,255,255,.18); margin:0 4px; }
+    .clean .controls{ display:none; }
 
-    /* Name labels (optional) */
-    .labels {
-      position: absolute;
-      left: 0; right: 0; top: 50%; transform: translateY(-50%);
-      pointer-events: none;
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      padding: 0 clamp(8px, 2vw, 24px);
-      font-size: clamp(10px, 2.2vw, 22px);
-      color: #d3d3d3;
-      opacity: .85;
-    }
-    .labels div { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-    .labels .home { justify-self: start; }
-    .labels .away { justify-self: end; }
+    /* ===== Responsive scaling using container query units ===== */
+    @supports (width: 1cqw){
+      :root{
+        /* Percentages relative to 1024×576 reference */
+        /* logos 220×272 */
+        --logo-w-p:21.484375;   /* 220/1024 * 100 */
+        --logo-h-p:47.222222;   /* 272/576  * 100 */
+        /* sponsor 520×254 */
+        --sponsor-w-p:50.78125; /* 520/1024 * 100 */
+        --sponsor-h-p:44.097222;/* 254/576  * 100 */
+        /* clock box */
+        --clock-x-p:27.5390625; /* 282/1024 * 100 */
+        --clock-w-p:44.921875;  /* 460/1024 * 100 */
+        --clock-h-p:34.722222;  /* 200/576  * 100 */
+        /* positions */
+        --home-x-p:4.1015625;   /* 42/1024  * 100 */
+        --gap-after-clock-p:1.953125; /* 20/1024 * 100 */
+      }
 
-    /* Control ribbon (can be hidden for broadcast) */
-    .controls {
-      position: absolute; left: 50%; transform: translateX(-50%);
-      bottom: 8px; display: flex; gap: 8px; align-items: center;
-      background: rgba(255,255,255,.06);
-      border: 1px solid rgba(255,255,255,.12);
-      padding: 6px 10px; border-radius: 999px;
-      backdrop-filter: blur(6px);
-      font-size: 14px; color: #eee;
-    }
-    .controls button, .controls input[type="number"] {
-      background: rgba(0,0,0,.35);
-      border: 1px solid rgba(255,255,255,.18);
-      color: #fff; padding: 6px 10px; border-radius: 10px;
-      font-size: 14px;
-    }
-    .controls input[type="text"] { width: 210px; }
-    .controls .spacer { width: 1px; height: 20px; background: rgba(255,255,255,.18); margin: 0 4px; }
+      .game-clock{
+        left:calc(var(--clock-x-p) * 1cqw);
+        width:calc(var(--clock-w-p) * 1cqw);
+        height:calc(var(--clock-h-p) * 1cqh);
+      }
 
-    /* Hide controls when ?clean=1 */
-    .clean .controls { display: none; }
+      .logo{
+        width:calc(var(--logo-w-p) * 1cqw);
+        height:calc(var(--logo-h-p) * 1cqh);
+      }
+      .logo.home{ left:calc(var(--home-x-p) * 1cqw); }
+      .logo.away{ left:calc( (var(--clock-x-p) + var(--clock-w-p) + var(--gap-after-clock-p)) * 1cqw ); }
+
+      .sponsor img{
+        width:calc(var(--sponsor-w-p) * 1cqw);
+        height:calc(var(--sponsor-h-p) * 1cqh);
+      }
+    }
   </style>
 </head>
 <body>
@@ -224,87 +195,50 @@
     const qs = (s) => document.querySelector(s);
     const pad2 = (n) => String(n).padStart(2, '0');
 
-    // ===== Scores DOM
+    // ===== DOM refs
     const gameClockEl = qs('#gameClock');
     const todEl = qs('#timeOfDay');
     const homeScoreEl = qs('#homeScore');
     const awayScoreEl = qs('#awayScore');
 
     // ===== Local Game Clock (fallback when no server)
-    let local = { running: false, startTime: 0, carry: 0 };
+    let local = { running:false, startTime:0, carry:0 };
 
     // ===== Network Clock (authoritative when present)
-    let net = null; // { running, startEpochMs, carryMs, serverNowMs }
+    let net = null; // { running, startEpochMs, carryMs }
     let skewMs = 0; // client_now - server_now
 
-    function computeDisplayFromClock(clock) {
+    const computeDisplayFromClock = (clock) => {
       const nowMs = Date.now() - (net ? skewMs : 0);
       const elapsed = (clock.running ? (nowMs - clock.startEpochMs) : 0) + (clock.carryMs || 0);
-      const totalSeconds = Math.max(0, Math.floor(elapsed / 1000));
-      const mm = Math.floor(totalSeconds / 60);
-      const ss = totalSeconds % 60;
-      return `${pad2(mm)}:${pad2(ss)}`;
-    }
+      const total = Math.max(0, Math.floor(elapsed / 1000));
+      return `${pad2(Math.floor(total/60))}:${pad2(total%60)}`;
+    };
 
-    function updateGameClock() {
+    const tickGameClock = () => {
       if (net) {
-        // Network authoritative
         gameClockEl.textContent = computeDisplayFromClock({
-          running: net.running,
-          startEpochMs: net.startEpochMs,
-          carryMs: net.carryMs
+          running: net.running, startEpochMs: net.startEpochMs, carryMs: net.carryMs
         });
       } else {
-        // Local fallback
         const now = Date.now();
         const elapsed = (local.running ? (now - local.startTime) : 0) + local.carry;
-        const totalSeconds = Math.floor(elapsed / 1000);
-        const mm = Math.floor(totalSeconds / 60);
-        const ss = totalSeconds % 60;
-        gameClockEl.textContent = `${pad2(mm)}:${pad2(ss)}`;
+        const total = Math.floor(elapsed / 1000);
+        gameClockEl.textContent = `${pad2(Math.floor(total/60))}:${pad2(total%60)}`;
       }
-      requestAnimationFrame(updateGameClock);
-    }
-    requestAnimationFrame(updateGameClock);
+      requestAnimationFrame(tickGameClock);
+    };
+    requestAnimationFrame(tickGameClock);
 
-    function startClock() {
-      if (net) return; // in synced mode, server controls the clock
-      if (local.running) return;
-      local.running = true;
-      local.startTime = Date.now();
-      qs('#playPause').textContent = '⏸ Pause';
-    }
-    function pauseClock() {
-      if (net) return;
-      if (!local.running) return;
-      local.running = false;
-      local.carry += Date.now() - local.startTime;
-      qs('#playPause').textContent = '▶︎ Start';
-    }
-    function resetClock() {
-      if (net) return;
-      local.running = false; local.startTime = 0; local.carry = 0;
-      gameClockEl.textContent = '00:00';
-      qs('#playPause').textContent = '▶︎ Start';
-    }
-
-    // ===== Time of Day
-    function tickTOD() {
+    // Time of day
+    const tickTOD = () => {
       const now = new Date();
-      const hh = pad2(now.getHours());
-      const mm = pad2(now.getMinutes());
-      const ss = pad2(now.getSeconds());
-      todEl.textContent = `${hh}:${mm}:${ss}`;
-    }
-    tickTOD();
-    setInterval(tickTOD, 1000);
+      todEl.textContent = `${pad2(now.getHours())}:${pad2(now.getMinutes())}:${pad2(now.getSeconds())}`;
+    };
+    tickTOD(); setInterval(tickTOD, 1000);
 
-    // ===== Score helpers (local only)
-    function bump(el, delta) {
-      if (net) return; // server-owned in sync mode
-      const v = Math.max(0, (parseInt(el.textContent, 10) || 0) + delta);
-      el.textContent = v;
-    }
+    // Local-only score bumpers
+    const bump = (el, d) => { if (net) return; const v = Math.max(0, (parseInt(el.textContent,10)||0) + d); el.textContent = v; };
 
     // Buttons
     qs('#playPause').addEventListener('click', () => (local.running ? pauseClock() : startClock()));
@@ -315,125 +249,122 @@
     qs('#awayMinus').addEventListener('click', () => bump(awayScoreEl, -1));
     qs('#fullBtn').addEventListener('click', async () => {
       const el = qs('#board');
-      if (!document.fullscreenElement) {
-        await el.requestFullscreen().catch(()=>{});
-      } else {
-        await document.exitFullscreen().catch(()=>{});
-      }
+      if (!document.fullscreenElement) { await el.requestFullscreen().catch(()=>{}); }
+      else { await document.exitFullscreen().catch(()=>{}); }
     });
 
-    // ===== Keyboard Shortcuts
-    document.addEventListener('keydown', (e) => {
-      if (e.repeat) return;
-      switch (e.key.toLowerCase()) {
-        case ' ': e.preventDefault(); local.running ? pauseClock() : startClock(); break;
-        case 'r': resetClock(); break;
-        case 'arrowleft': bump(homeScoreEl, +1); break;
-        case 'arrowright': bump(awayScoreEl, +1); break;
-        case 'arrowdown': bump(homeScoreEl, -1); break;
-        case 'arrowup': bump(awayScoreEl, -1); break;
-        case 'f': qs('#fullBtn').click(); break;
-      }
-    });
+    function startClock(){ if (net || local.running) return; local.running = true; local.startTime = Date.now(); qs('#playPause').textContent='⏸ Pause'; }
+    function pauseClock(){ if (net || !local.running) return; local.running = false; local.carry += Date.now() - local.startTime; qs('#playPause').textContent='▶︎ Start'; }
+    function resetClock(){ if (net) return; local = { running:false, startTime:0, carry:0 }; gameClockEl.textContent='00:00'; qs('#playPause').textContent='▶︎ Start'; }
 
-    // ===== Query params for easy setup
+    // ===== Query params
     const params = new URLSearchParams(location.search);
-    const setImg = (id, url) => { const el = qs(id); if (url) { el.src = url; el.style.visibility = 'visible'; } else { el.style.visibility = 'hidden'; } };
+    const setImg = (id, url) => {
+      const el = qs(id);
+      if (url) { el.src = url; el.style.visibility = 'visible'; }
+      else { el.style.visibility = 'hidden'; }
+    };
     const setText = (id, val) => { if (val != null) qs(id).textContent = val; };
 
     setText('#homeName', params.get('homeName') || '');
     setText('#awayName', params.get('awayName') || '');
-
     setImg('#homeLogo', params.get('homeLogo'));
     setImg('#awayLogo', params.get('awayLogo'));
     setImg('#sponsorLogo', params.get('sponsor'));
 
-    if (params.has('home')) homeScoreEl.textContent = String(parseInt(params.get('home'), 10) || 0);
-    if (params.has('away')) awayScoreEl.textContent = String(parseInt(params.get('away'), 10) || 0);
-
+    if (params.has('home')) homeScoreEl.textContent = String(parseInt(params.get('home'),10) || 0);
+    if (params.has('away')) awayScoreEl.textContent = String(parseInt(params.get('away'),10) || 0);
     if (params.get('clean') === '1') document.body.classList.add('clean');
 
-    if ((params.get('theme')||'').toLowerCase()==='light') {
-      document.documentElement.style.setProperty('--bg', '#f7f7f9');
-      document.documentElement.style.setProperty('--fg', '#0b0b0b');
-      document.documentElement.style.setProperty('--muted', '#4a4a4a');
-      document.documentElement.style.setProperty('--digit-shadow', '0 0 12px rgba(0,0,0,.12)');
+    if ((params.get('theme')||'').toLowerCase()==='light'){
+      document.documentElement.style.setProperty('--bg','#f7f7f9');
+      document.documentElement.style.setProperty('--fg','#0b0b0b');
+      document.documentElement.style.setProperty('--muted','#4a4a4a');
+      document.documentElement.style.setProperty('--digit-shadow','0 0 12px rgba(0,0,0,.12)');
     }
 
-    // Default placeholders if no URLs given
-    if (!qs('#homeLogo').src) qs('#homeLogo').src = 'data:image/svg+xml;utf8,' + encodeURIComponent(`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 160 160"><rect width="100%" height="100%" rx="24" fill="#1976d2"/><text x="50%" y="54%" text-anchor="middle" fill="#fff" font-size="64" font-family="Arial, Helvetica, sans-serif">H</text></svg>`);
-    if (!qs('#awayLogo').src) qs('#awayLogo').src = 'data:image/svg+xml;utf8,' + encodeURIComponent(`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 160 160"><rect width="100%" height="100%" rx="24" fill="#c62828"/><text x="50%" y="54%" text-anchor="middle" fill="#fff" font-size="64" font-family="Arial, Helvetica, sans-serif">A</text></svg>`);
-    if (!qs('#sponsorLogo').src) qs('#sponsorLogo').src = 'data:image/svg+xml;utf8,' + encodeURIComponent(`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 600 120"><rect width="100%" height="100%" fill="none"/><text x="50%" y="58%" text-anchor="middle" fill="#e0e0e0" font-size="56" font-family="Arial, Helvetica, sans-serif">YOUR SPONSOR</text></svg>`);
+    // Default placeholders (ensure visibility even if query omitted)
+    if (!qs('#homeLogo').src){
+      const el = qs('#homeLogo');
+      el.src = 'data:image/svg+xml;utf8,' + encodeURIComponent(
+        `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 220 272">
+           <rect width="100%" height="100%" rx="24" fill="#1976d2"/>
+           <text x="50%" y="55%" text-anchor="middle" fill="#fff" font-size="140" font-family="Arial, Helvetica, sans-serif">H</text>
+         </svg>`
+      );
+      el.style.visibility = 'visible';
+    }
+    if (!qs('#awayLogo').src){
+      const el = qs('#awayLogo');
+      el.src = 'data:image/svg+xml;utf8,' + encodeURIComponent(
+        `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 220 272">
+           <rect width="100%" height="100%" rx="24" fill="#c62828"/>
+           <text x="50%" y="55%" text-anchor="middle" fill="#fff" font-size="140" font-family="Arial, Helvetica, sans-serif">A</text>
+         </svg>`
+      );
+      el.style.visibility = 'visible';
+    }
+    if (!qs('#sponsorLogo').src){
+      const el = qs('#sponsorLogo');
+      el.src = 'data:image/svg+xml;utf8,' + encodeURIComponent(
+        `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 520 254">
+           <rect width="100%" height="100%" fill="none"/>
+           <text x="50%" y="55%" text-anchor="middle" fill="#e0e0e0" font-size="64" font-family="Arial, Helvetica, sans-serif">YOUR SPONSOR</text>
+         </svg>`
+      );
+      el.style.visibility = 'visible';
+    }
 
     // ===== WebSocket sync (read-only client)
-    // Start the page with: ?ws=ws://yourserver:8080
     const wsUrl = params.get('ws');
     let ws;
-    function connectWS() {
+    function connectWS(){
       if (!wsUrl) return;
-      const hideControls = params.get('clean') === '1' || true; // hide by default in synced mode
+
+      // Hide controls automatically when syncing from server or when clean=1
+      const hideControls = (params.get('clean') === '1') || Boolean(wsUrl);
       if (hideControls) qs('#controls').style.display = 'none';
 
       ws = new WebSocket(wsUrl);
       ws.addEventListener('open', () => {
-        // Identify as viewer
-        ws.send(JSON.stringify({ type: 'hello', role: 'viewer' }));
+        ws.send(JSON.stringify({ type:'hello', role:'viewer' }));
       });
       ws.addEventListener('message', (evt) => {
-        try {
-          const msg = JSON.parse(evt.data);
-          handleServerMessage(msg);
-        } catch (e) { /* ignore */ }
+        try { handleServerMessage(JSON.parse(evt.data)); } catch(e){}
       });
-      ws.addEventListener('close', () => {
-        // retry with backoff
-        setTimeout(connectWS, 1000);
-      });
-      ws.addEventListener('error', () => { try { ws.close(); } catch(_){} });
+      ws.addEventListener('close', () => setTimeout(connectWS, 1000));
+      ws.addEventListener('error', () => { try{ ws.close(); }catch(_){} });
     }
 
-    function handleServerMessage(msg) {
-      switch (msg.type) {
-        case 'state': {
-          // Full state push
-          if (typeof msg.serverNowMs === 'number') {
-            skewMs = Date.now() - msg.serverNowMs; // positive if client is ahead of server
-          }
-          // Team meta (optional)
-          if (msg.teams) {
+    function handleServerMessage(msg){
+      switch (msg.type){
+        case 'state':{
+          if (typeof msg.serverNowMs === 'number') skewMs = Date.now() - msg.serverNowMs;
+
+          if (msg.teams){
             const t = msg.teams;
-          
             if (t.homeName !== undefined) qs('#homeName').textContent = t.homeName || '';
             if (t.awayName !== undefined) qs('#awayName').textContent = t.awayName || '';
-          
-            if (t.homeLogo) { const el = qs('#homeLogo'); el.src = t.homeLogo; el.style.visibility = 'visible'; }
-            if (t.awayLogo) { const el = qs('#awayLogo'); el.src = t.awayLogo; el.style.visibility = 'visible'; }
-            if (t.sponsor)  { const el = qs('#sponsorLogo'); el.src = t.sponsor;  el.style.visibility = 'visible'; }
+            if (t.homeLogo){ const el = qs('#homeLogo'); el.src = t.homeLogo; el.style.visibility='visible'; }
+            if (t.awayLogo){ const el = qs('#awayLogo'); el.src = t.awayLogo; el.style.visibility='visible'; }
+            if (t.sponsor ){ const el = qs('#sponsorLogo'); el.src = t.sponsor;  el.style.visibility='visible'; }
           }
-          if (msg.score) {
+          if (msg.score){
             if (typeof msg.score.home === 'number') homeScoreEl.textContent = String(msg.score.home);
             if (typeof msg.score.away === 'number') awayScoreEl.textContent = String(msg.score.away);
           }
-          if (msg.clock) {
-            net = {
-              running: !!msg.clock.running,
-              startEpochMs: msg.clock.startEpochMs || 0,
-              carryMs: msg.clock.carryMs || 0
-            };
+          if (msg.clock){
+            net = { running:!!msg.clock.running, startEpochMs:msg.clock.startEpochMs||0, carryMs:msg.clock.carryMs||0 };
           }
           break;
         }
-        case 'score': {
+        case 'score':{
           if (typeof msg.home === 'number') homeScoreEl.textContent = String(msg.home);
           if (typeof msg.away === 'number') awayScoreEl.textContent = String(msg.away);
           break;
         }
-        case 'clock': {
-          net = {
-            running: !!msg.running,
-            startEpochMs: msg.startEpochMs || 0,
-            carryMs: msg.carryMs || 0
-          };
+        case 'clock':{
+          net = { running:!!msg.running, startEpochMs:msg.startEpochMs||0, carryMs:msg.carryMs||0 };
           if (typeof msg.serverNowMs === 'number') skewMs = Date.now() - msg.serverNowMs;
           break;
         }
