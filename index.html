@@ -102,9 +102,9 @@
       place-items: center;
     }
     .sponsor img {
-      max-height: clamp(24px, 6vw, 72px);
-      max-width: min(38vw, 520px);
-      object-fit: contain;
+      width: 520px;        /* fixed width  */
+      height: 254px;       /* fixed height */
+      object-fit: contain; /* keep aspect; letterbox if needed */
       filter: drop-shadow(0 6px 16px rgba(0,0,0,.6));
     }
 
