@@ -14,6 +14,16 @@
       --muted: #bdbdbd;
       --accent: #e53935;
       --digit-shadow: 0 0 12px rgba(255,255,255,0.15);
+      
+      --clock-x: 282px;
+      --clock-w: 460px;
+      --clock-h: 200px;
+
+      --logo-w: 220px;
+      --logo-h: 272px;
+
+      --home-x: 42px;      /* where you want the home logo */
+      --gap-after-clock: 20px; /* space between clock and away logo */
     }
 
     *, *::before, *::after { box-sizing: border-box; }
@@ -58,36 +68,38 @@
     }
 
     .logo {
-      width: 220px;           /* ← fixed width */
-      height: 272px;          /* ← fixed height */
-      object-fit: contain;    /* keep aspect; letterbox if needed */
+      position: absolute;
+      top: 0;
+      width: var(--logo-w);
+      height: var(--logo-h);
+      object-fit: contain;
       filter: drop-shadow(0 4px 8px rgba(0,0,0,.5));
-      justify-self: start;
     }
-    .logo.away { justify-self: end; }
-
+    .logo.home {
+      left: var(--home-x);
+    }
+    .logo.away {
+      left: calc(var(--clock-x) + var(--clock-w) + var(--gap-after-clock));
+    }
+    
     .game-clock {
       position: absolute;
-      left: 282px;     /* x */
-      top: 0px;        /* y */
-      width: 460px;
-      height: 200px;
-
-      display: grid;           /* center the text in the box */
-      place-items: center;
-
+      left: var(--clock-x);
+      top: 0;
+      width: var(--clock-w);
+      height: var(--clock-h);
+      display: grid; place-items: center;
       font-variant-numeric: tabular-nums;
       letter-spacing: .04em;
       text-shadow: var(--digit-shadow);
       font-weight: 700;
-      font-size: clamp(28px, 8vmin, 200px);  /* cap at 200 as requested */
+      font-size: clamp(28px, 8vmin, 200px);
       line-height: 1;
-
-      padding: 0;              /* no extra padding since we set fixed size */
+      padding: 0;
       border-radius: 16px;
       border: 2px solid transparent;
       background: linear-gradient(180deg, rgba(255,255,255,.08), rgba(255,255,255,.02));
-      z-index: 10;             /* sit above grid content */
+      z-index: 10;
     }
 
     /* Middle row: scores + sponsor */
