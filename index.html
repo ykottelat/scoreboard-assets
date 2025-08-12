@@ -20,7 +20,7 @@
       --clock-w:460px; --clock-h:200px;      /* clock box size */
       --logo-w:220px;  --logo-h:272px;       /* logo box size */
       --sponsor-w:520px; --sponsor-h:254px;  /* sponsor box size */
-      --sponsor-gap:12px;                    /* gap under the top row */
+      --sponsor-gap: 12px;   /* vertical gap under the clock */
     }
 
     /* Global: prevent horizontal scrollbars */
@@ -145,7 +145,7 @@
         --sponsor-h-p:44.097222;/* 254/576  * 100 */
         --clock-w-p:44.921875;  /* 460/1024 * 100 */
         --clock-h-p:34.722222;  /* 200/576  * 100 */
-        --sponsor-gap-p: 2; /* keep your preferred vertical gap in % of board height */
+        --sponsor-gap-p: 2;     /* vertical gap under the clock */
       }
 
       .game-clock{
@@ -172,15 +172,10 @@
       }
 
       .sponsor-top{
-        top: calc( max( (var(--logo-h-p) * 1cqh), (var(--clock-h-p) * 1cqh) )
-                   + (var(--sponsor-gap-p) * 1cqh) );
-        width: calc(var(--clock-w-p) * 1cqw);   /* <- lock to clock width (responsive) */
+        top: calc( (var(--clock-h-p) * 1cqh) + (var(--sponsor-gap-p) * 1cqh) );
+        width: calc(var(--clock-w-p) * 1cqw);
       }
-
-      .sponsor-top img{
-        width: 100%;
-        height: auto;
-      }
+      .sponsor-top img{ width: 100%; height: auto; }
     }
   </style>
 </head>
