@@ -21,6 +21,7 @@
       --logo-w:220px;  --logo-h:272px;       /* logo box size */
       --sponsor-w:520px; --sponsor-h:254px;  /* sponsor box size */
       --sponsor-gap: 12px;   /* vertical gap under the clock */
+      --score-gap: 12px;        /* vertical gap under the logos (fallback) */
     }
 
     /* Global: prevent horizontal scrollbars */
@@ -99,13 +100,38 @@
       filter: drop-shadow(0 6px 16px rgba(0,0,0,.6));
     }
 
-    /* Middle row: only scores now */
-    .middle{ display:grid; grid-template-columns:1fr 1fr; align-items:center; }
+    /* Scores: centered under their respective logos */
     .score{
-      font-variant-numeric:tabular-nums; font-weight:800; text-shadow:var(--digit-shadow);
-      font-size:clamp(48px, 14vmin, 200px); line-height:1;
+      position: absolute;
+      top: calc(var(--logo-h) + var(--score-gap));  /* directly under logos */
+      width: var(--logo-w);                          /* same width as logo box */
+      height: var(--clock-h);                        /* same height as the clock box */
+      display: grid;
+      place-items: center;
+
+      font-variant-numeric: tabular-nums;
+      font-weight: 800;
+      text-shadow: var(--digit-shadow);
+      line-height: 1;
+
+      /* Auto-fit digits; cap by clock height (same max as clock) */
+      font-size: min(
+        calc(var(--clock-h) * 0.8),  /* vertical cap = clock cap */
+        calc(var(--logo-w) / 2.2)    /* width fit for up to 2 digits */
+      );
+
+      z-index: 7; /* above background, below clock */
     }
-    .score.home{ justify-self:start; } .score.away{ justify-self:end; }
+
+    /* Left score: center under left logo */
+    .score.home{
+      left: calc( (50% - (var(--clock-w) / 2)) / 2 - (var(--logo-w) / 2) );
+    }
+
+    /* Right score: center under right logo */
+    .score.away{
+      left: calc( ( (50% + (var(--clock-w) / 2)) + 100% ) / 2 - (var(--logo-w) / 2) );
+    }
 
     /* Bottom time-of-day */
     .bottom{ display:grid; place-items:center; }
@@ -146,6 +172,7 @@
         --clock-w-p:44.921875;  /* 460/1024 * 100 */
         --clock-h-p:34.722222;  /* 200/576  * 100 */
         --sponsor-gap-p: 2;     /* vertical gap under the clock */
+        --score-gap-p: 2;       /* ~2% of board height under logos */
       }
 
       .game-clock{
@@ -176,6 +203,29 @@
         width: calc(var(--clock-w-p) * 1cqw);
       }
       .sponsor-top img{ width: 100%; height: auto; }
+
+      .score{
+        top: calc( (var(--logo-h-p) * 1cqh) + (var(--score-gap-p) * 1cqh) );
+        width:  calc(var(--logo-w-p) * 1cqw);
+        height: calc(var(--clock-h-p) * 1cqh);
+
+        font-size: min(
+          calc((var(--clock-h-p) * 1cqh) * 0.8),
+          calc((var(--logo-w-p) * 1cqw) / 2.2)
+        );
+      }
+
+      /* Left score aligned under left logo */
+      .score.home{
+        left: calc( (50% - ( (var(--clock-w-p) * 1cqw) / 2 )) / 2
+                    - ( (var(--logo-w-p) * 1cqw) / 2 ) );
+      }
+
+      /* Right score aligned under right logo */
+      .score.away{
+        left: calc( ( (50% + ( (var(--clock-w-p) * 1cqw) / 2 )) + 100% ) / 2
+                    - ( (var(--logo-w-p) * 1cqw) / 2 ) );
+      }
     }
   </style>
 </head>
