@@ -58,7 +58,12 @@
       width:var(--clock-w); height:var(--clock-h);
       display:grid; place-items:center;
       font-variant-numeric:tabular-nums; letter-spacing:.04em; text-shadow:var(--digit-shadow);
-      font-weight:700; font-size:clamp(28px, 8vmin, 200px); line-height:1;
+      font-weight:700; 
+      font-size: min(
+        calc(var(--clock-w) / 5.2),     /* width ÷ ~5 chars ("MM:SS") */
+        calc(var(--clock-h) * 0.8)      /* leave a little vertical breathing room */
+      );
+      line-height:1;
       padding:0; border-radius:16px; border:2px solid transparent;
       background:linear-gradient(180deg, rgba(255,255,255,.08), rgba(255,255,255,.02));
       z-index:10;
@@ -138,6 +143,10 @@
         left:calc(var(--clock-x-p) * 1cqw);
         width:calc(var(--clock-w-p) * 1cqw);
         height:calc(var(--clock-h-p) * 1cqh);
+        font-size: min(
+          calc((var(--clock-w-p) * 1cqw) / 5.2),
+          calc(var(--clock-h-p) * 1cqh * 0.8)
+        );
       }
 
       .logo{
