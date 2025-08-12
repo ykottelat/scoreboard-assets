@@ -16,12 +16,13 @@
       --bg:#0b0b0b; --fg:#f5f5f5; --muted:#bdbdbd; --accent:#e53935;
       --digit-shadow:0 0 12px rgba(255,255,255,.15);
 
-      /* Fallback absolute sizes (1024×576 reference) */
-      --clock-w:460px; --clock-h:200px;
-      --logo-w:220px;  --logo-h:272px;
+      /* Reference sizes (1024×576 design) */
+      --clock-w:460px; --clock-h:200px;      /* clock box size */
+      --logo-w:220px;  --logo-h:272px;       /* logo box size */
+      --gap-after-clock:20px;                /* kept for compatibility */
     }
 
-    /* Global */
+    /* Global: prevent horizontal scrollbars */
     *,*::before,*::after{ box-sizing:border-box; }
     html,body{ width:100%; max-width:100%; overflow-x:hidden; height:100%; }
     body{
@@ -31,36 +32,44 @@
       display:grid; place-items:center;
     }
 
-    /* Board container */
+    /* Board */
     .board{
       width:min(100dvw, 1024px, calc(100dvh * (16/9)));
       aspect-ratio:16/9; height:auto;
+
       position:relative; overflow:hidden;
       padding:clamp(8px,2vw,24px);
       display:grid; grid-template-rows:auto 1fr auto;
+
       border-radius:24px;
       box-shadow:0 20px 60px rgba(0,0,0,.45) inset, 0 10px 30px rgba(0,0,0,.35);
-      background:rgba(13,71,161,.92);
-      container-type:size;               /* enable cqw/cqh */
+      background:rgba(13,71,161,.92); /* blue board */
+
+      /* enable container query units (cqw/cqh) */
+      container-type:size;
     }
 
     .top{ display:grid; grid-template-columns:1fr auto 1fr; align-items:center; gap:clamp(8px,2vw,24px); }
 
-    /* === CLOCK: fixed-size box, centered horizontally === */
+    /* === CLOCK: centered at top, fixed 460×200 box (responsive later) === */
     .game-clock{
       position:absolute; top:0; left:50%; transform:translateX(-50%);
       width:var(--clock-w); height:var(--clock-h);
       display:grid; place-items:center;
       font-variant-numeric:tabular-nums; letter-spacing:.04em; text-shadow:var(--digit-shadow);
-      font-weight:700; line-height:1;
-      /* Auto-fit text inside 460×200 box */
-      font-size: min(calc(var(--clock-w) / 5.2), calc(var(--clock-h) * 0.8));
-      border-radius:16px; border:2px solid transparent;
+      font-weight:700;
+      /* Auto-fit text inside box */
+      font-size: min(
+        calc(var(--clock-w) / 5.2),     /* width ÷ ~5 chars ("MM:SS") */
+        calc(var(--clock-h) * 0.8)      /* leave vertical breathing room */
+      );
+      line-height:1;
+      padding:0; border-radius:16px; border:2px solid transparent;
       background:linear-gradient(180deg, rgba(255,255,255,.08), rgba(255,255,255,.02));
       z-index:10;
     }
 
-    /* === LOGOS: centered in the spaces left/right of the clock === */
+    /* === LOGOS: centered in left/right spaces beside the centered clock === */
     .logo{
       position:absolute; top:0;
       width:var(--logo-w); height:var(--logo-h);
@@ -93,7 +102,7 @@
     .bottom{ display:grid; place-items:center; }
     .tod{ font-variant-numeric:tabular-nums; color:var(--muted); font-size:clamp(18px,5vw,40px); letter-spacing:.12em; text-shadow:0 0 10px rgba(0,0,0,.6); }
 
-    /* Team name labels */
+    /* Team name labels (optional) */
     .labels{
       position:absolute; left:0; right:0; top:50%; transform:translateY(-50%);
       pointer-events:none; display:grid; grid-template-columns:1fr 1fr;
@@ -117,22 +126,22 @@
     .controls .spacer{ width:1px; height:20px; background:rgba(255,255,255,.18); margin:0 4px; }
     .clean .controls{ display:none; }
 
-    /* ===== Responsive scaling with container query units ===== */
+    /* ===== Responsive scaling using container query units ===== */
     @supports (width: 1cqw){
       :root{
-        /* Percent of 1024×576 reference */
-        --clock-w-p:44.921875;  /* 460/1024 * 100 */
-        --clock-h-p:34.722222;  /* 200/576  * 100 */
+        /* Percentages relative to 1024×576 reference */
         --logo-w-p:21.484375;   /* 220/1024 * 100 */
         --logo-h-p:47.222222;   /* 272/576  * 100 */
         --sponsor-w-p:50.78125; /* 520/1024 * 100 */
         --sponsor-h-p:44.097222;/* 254/576  * 100 */
+        --clock-w-p:44.921875;  /* 460/1024 * 100 */
+        --clock-h-p:34.722222;  /* 200/576  * 100 */
       }
 
       .game-clock{
-        width: calc(var(--clock-w-p) * 1cqw);
-        height: calc(var(--clock-h-p) * 1cqh);
-        /* Auto-fit inside scalable box */
+        left:50%; transform:translateX(-50%);
+        width:calc(var(--clock-w-p) * 1cqw);
+        height:calc(var(--clock-h-p) * 1cqh);
         font-size: min(
           calc((var(--clock-w-p) * 1cqw) / 5.2),
           calc(var(--clock-h-p) * 1cqh * 0.8)
@@ -140,8 +149,8 @@
       }
 
       .logo{
-        width: calc(var(--logo-w-p) * 1cqw);
-        height: calc(var(--logo-h-p) * 1cqh);
+        width:calc(var(--logo-w-p) * 1cqw);
+        height:calc(var(--logo-h-p) * 1cqh);
       }
       /* Left: center between left edge and clock-left */
       .logo.home{
@@ -153,8 +162,8 @@
       }
 
       .sponsor img{
-        width: calc(var(--sponsor-w-p) * 1cqw);
-        height: calc(var(--sponsor-h-p) * 1cqh);
+        width:calc(var(--sponsor-w-p) * 1cqw);
+        height:calc(var(--sponsor-h-p) * 1cqh);
       }
     }
   </style>
@@ -206,12 +215,12 @@
     const homeScoreEl = qs('#homeScore');
     const awayScoreEl = qs('#awayScore');
 
-    // ===== Local Game Clock (fallback)
+    // ===== Local Game Clock (fallback when no server)
     let local = { running:false, startTime:0, carry:0 };
 
-    // ===== Network Clock (authoritative)
+    // ===== Network Clock (authoritative when present)
     let net = null; // { running, startEpochMs, carryMs }
-    let skewMs = 0;
+    let skewMs = 0; // client_now - server_now
 
     const computeDisplayFromClock = (clock) => {
       const nowMs = Date.now() - (net ? skewMs : 0);
@@ -264,5 +273,118 @@
 
     // ===== Query params
     const params = new URLSearchParams(location.search);
-    const setImg = (id, url) => { const el = qs(id); if (url){ el.src = url; el.style.visibility='visible'; } else { el.style.visibility='hidden'; } };
+    const setImg = (id, url) => {
+      const el = qs(id);
+      if (url) { el.src = url; el.style.visibility = 'visible'; }
+      else { el.style.visibility = 'hidden'; }
+    };
     const setText = (id, val) => { if (val != null) qs(id).textContent = val; };
+
+    setText('#homeName', params.get('homeName') || '');
+    setText('#awayName', params.get('awayName') || '');
+    setImg('#homeLogo', params.get('homeLogo'));
+    setImg('#awayLogo', params.get('awayLogo'));
+    setImg('#sponsorLogo', params.get('sponsor'));
+
+    if (params.has('home')) homeScoreEl.textContent = String(parseInt(params.get('home'),10) || 0);
+    if (params.has('away')) awayScoreEl.textContent = String(parseInt(params.get('away'),10) || 0);
+    if (params.get('clean') === '1') document.body.classList.add('clean');
+
+    if ((params.get('theme')||'').toLowerCase()==='light'){
+      document.documentElement.style.setProperty('--bg','#f7f7f9');
+      document.documentElement.style.setProperty('--fg','#0b0b0b');
+      document.documentElement.style.setProperty('--muted','#4a4a4a');
+      document.documentElement.style.setProperty('--digit-shadow','0 0 12px rgba(0,0,0,.12)');
+    }
+
+    // Default placeholders (ensure visibility even if query omitted)
+    if (!qs('#homeLogo').src){
+      const el = qs('#homeLogo');
+      el.src = 'data:image/svg+xml;utf8,' + encodeURIComponent(
+        `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 220 272">
+           <rect width="100%" height="100%" rx="24" fill="#1976d2"/>
+           <text x="50%" y="55%" text-anchor="middle" fill="#fff" font-size="140" font-family="Arial, Helvetica, sans-serif">H</text>
+         </svg>`
+      );
+      el.style.visibility = 'visible';
+    }
+    if (!qs('#awayLogo').src){
+      const el = qs('#awayLogo');
+      el.src = 'data:image/svg+xml;utf8,' + encodeURIComponent(
+        `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 220 272">
+           <rect width="100%" height="100%" rx="24" fill="#c62828"/>
+           <text x="50%" y="55%" text-anchor="middle" fill="#fff" font-size="140" font-family="Arial, Helvetica, sans-serif">A</text>
+         </svg>`
+      );
+      el.style.visibility = 'visible';
+    }
+    if (!qs('#sponsorLogo').src){
+      const el = qs('#sponsorLogo');
+      el.src = 'data:image/svg+xml;utf8,' + encodeURIComponent(
+        `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 520 254">
+           <rect width="100%" height="100%" fill="none"/>
+           <text x="50%" y="55%" text-anchor="middle" fill="#e0e0e0" font-size="64" font-family="Arial, Helvetica, sans-serif">YOUR SPONSOR</text>
+         </svg>`
+      );
+      el.style.visibility = 'visible';
+    }
+
+    // ===== WebSocket sync (read-only client)
+    const wsUrl = params.get('ws');
+    let ws;
+    function connectWS(){
+      if (!wsUrl) return;
+
+      const hideControls = (params.get('clean') === '1') || Boolean(wsUrl);
+      if (hideControls) qs('#controls').style.display = 'none';
+
+      ws = new WebSocket(wsUrl);
+      ws.addEventListener('open', () => {
+        ws.send(JSON.stringify({ type:'hello', role:'viewer' }));
+      });
+      ws.addEventListener('message', (evt) => {
+        try { handleServerMessage(JSON.parse(evt.data)); } catch(e){}
+      });
+      ws.addEventListener('close', () => setTimeout(connectWS, 1000));
+      ws.addEventListener('error', () => { try{ ws.close(); }catch(_){} });
+    }
+
+    function handleServerMessage(msg){
+      switch (msg.type){
+        case 'state':{
+          if (typeof msg.serverNowMs === 'number') skewMs = Date.now() - msg.serverNowMs;
+
+          if (msg.teams){
+            const t = msg.teams;
+            if (t.homeName !== undefined) qs('#homeName').textContent = t.homeName || '';
+            if (t.awayName !== undefined) qs('#awayName').textContent = t.awayName || '';
+            if (t.homeLogo){ const el = qs('#homeLogo'); el.src = t.homeLogo; el.style.visibility='visible'; }
+            if (t.awayLogo){ const el = qs('#awayLogo'); el.src = t.awayLogo; el.style.visibility='visible'; }
+            if (t.sponsor ){ const el = qs('#sponsorLogo'); el.src = t.sponsor;  el.style.visibility='visible'; }
+          }
+          if (msg.score){
+            if (typeof msg.score.home === 'number') homeScoreEl.textContent = String(msg.score.home);
+            if (typeof msg.score.away === 'number') awayScoreEl.textContent = String(msg.score.away);
+          }
+          if (msg.clock){
+            net = { running:!!msg.clock.running, startEpochMs:msg.clock.startEpochMs||0, carryMs:msg.clock.carryMs||0 };
+          }
+          break;
+        }
+        case 'score':{
+          if (typeof msg.home === 'number') homeScoreEl.textContent = String(msg.home);
+          if (typeof msg.away === 'number') awayScoreEl.textContent = String(msg.away);
+          break;
+        }
+        case 'clock':{
+          net = { running:!!msg.running, startEpochMs:msg.startEpochMs||0, carryMs:msg.carryMs||0 };
+          if (typeof msg.serverNowMs === 'number') skewMs = Date.now() - msg.serverNowMs;
+          break;
+        }
+      }
+    }
+
+    connectWS();
+  </script>
+</body>
+</html>
