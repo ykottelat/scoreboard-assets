@@ -134,9 +134,23 @@
     }
 
     /* Bottom time-of-day */
-    .bottom{ display:grid; place-items:center; }
-    .tod{ font-variant-numeric:tabular-nums; color:var(--muted); font-size:clamp(18px,5vw,40px); letter-spacing:.12em; text-shadow:0 0 10px rgba(0,0,0,.6); }
+    .bottom { /* keep as a wrapper; positioning is done on .tod */ }
+    .tod{
+      position: absolute;
+      left: 50%;
+      /* vertical center between logo bottom (var(--logo-h)) and board bottom (100%) */
+      top: calc( (var(--logo-h) + 100%) / 2 );
+      transform: translate(-50%, -50%);
 
+      font-variant-numeric: tabular-nums;
+      color: var(--muted);
+      /* same max as before (40px); responsive fallback on viewport */
+      font-size: clamp(18px, 5vw, 40px);
+      letter-spacing: .12em;
+      text-shadow: 0 0 10px rgba(0,0,0,.6);
+      z-index: 4;
+    }
+    
     /* Team name labels (optional) */
     .labels{
       position:absolute; left:0; right:0; top:50%; transform:translateY(-50%);
@@ -174,7 +188,14 @@
         --sponsor-gap-p: 2;     /* vertical gap under the clock */
         --score-gap-p: 2;       /* ~2% of board height under logos */
       }
-
+      
+      .tod{
+        /* logo bottom in container height units, midpoint to bottom (100%) */
+        top: calc( ( (var(--logo-h-p) * 1cqh) + 100% ) / 2 );
+        /* same max (40px), but scale with the board’s width instead of viewport */
+        font-size: clamp(18px, 5cqw, 40px);
+      }
+    
       .game-clock{
         width: calc(var(--clock-w-p) * 1cqw);
         height: calc(var(--clock-h-p) * 1cqh);
