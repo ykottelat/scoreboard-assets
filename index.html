@@ -138,14 +138,15 @@
     .tod{
       position: absolute;
       left: 50%;
-      /* vertical center between logo bottom (var(--logo-h)) and board bottom (100%) */
-      top: calc( (var(--logo-h) + 100%) / 2 );
+      /* midpoint between sponsor bottom and board bottom */
+      top: calc(
+        ( max(var(--logo-h), var(--clock-h)) + var(--sponsor-gap) + var(--sponsor-h) + 100% ) / 2
+      );
       transform: translate(-50%, -50%);
 
       font-variant-numeric: tabular-nums;
       color: var(--muted);
-      /* same max as before (40px); responsive fallback on viewport */
-      font-size: clamp(18px, 5vw, 40px);
+      font-size: clamp(18px, 5vw, 40px);  /* same max as before */
       letter-spacing: .12em;
       text-shadow: 0 0 10px rgba(0,0,0,.6);
       z-index: 4;
@@ -190,9 +191,15 @@
       }
       
       .tod{
-        /* logo bottom in container height units, midpoint to bottom (100%) */
-        top: calc( ( (var(--logo-h-p) * 1cqh) + 100% ) / 2 );
-        /* same max (40px), but scale with the board’s width instead of viewport */
+        /* sponsor bottom in container units, then midpoint to 100% */
+        top: calc(
+          (
+            max( (var(--logo-h-p) * 1cqh), (var(--clock-h-p) * 1cqh) )
+            + (var(--sponsor-gap-p) * 1cqh)
+            + (var(--sponsor-h-p) * 1cqh)
+            + 100%
+          ) / 2
+        );
         font-size: clamp(18px, 5cqw, 40px);
       }
     
