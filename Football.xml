@@ -1,0 +1,128 @@
+﻿<Scenes>
+	<Scene scenename="GameClock" camera="Camera1">
+		<Item prefab="Panel" name="Panel" x="0" y="0" width="512" height="288" imagecolor="0;0;0;255" />
+		<Item prefab="Image" name="ClubLogo" x="11" y="-6" width="110" height="138" defaultimage="C:\ImagesTableau\Logo\FCVT.png" animator="None"/>
+		<Item prefab="Image" name="ClubLogo2" x="391" y="-6" width="110" height="138" defaultimage="C:\ImagesTableau\Logo\FCDiaspora.png" animator="None"/>
+		<Item prefab="Text" name="AwayTeam" x="374" y="-16"  width="135" height="67" textcolor="255;255;255;255" defaulttext="FCVT" font="Droid Sans Mono;25" maxfontsize="200" minfontsize="6" animator="None"/>
+		<Item prefab="Image" name="SponsorLogo" x="126" y="-100" width="260" height="127" defaultimage="C:\ImagesTableau\Sponsors\Comte.png" animator="None"/>
+		<Item prefab="Text" name="GameTime" x="141" y="0"  width="230" height="100" textcolor="255;255;255;255" textalignment="MiddleCenter" defaulttext="10:00" font="Droid Sans Mono;25" maxfontsize="200" minfontsize="2" animator="None"/>
+		<Item prefab="Text" name="HomeScore" x="4" y="-140"  width="123" height="113" textcolor="255;255;255;255" textalignment="MiddleCenter" defaulttext="10" font="Droid Sans Mono;25" maxfontsize="200" minfontsize="6" animator="None"/>
+		<Item prefab="Text" name="AwayScore" x="386" y="-140"  width="123" height="113" textcolor="255;255;255;255" textalignment="MiddleCenter" defaulttext="10" font="Droid Sans Mono;25" maxfontsize="200" minfontsize="6" animator="None"/>
+		<Item prefab="Text" name="TOD" x="141" y="-232"  width="230" height="56" textcolor="255;255;255;255" textalignment="MiddleCenter" defaulttext="10:00:00" font="Droid Sans Mono;25" maxfontsize="50" minfontsize="1" animator="None"/>
+	</Scene>
+	<Scene scenename="PublicityFullScreen" camera="Camera2">
+		<Item prefab="Panel" name="Panel" x="0" y="0" width="512" height="288" imagecolor="0;0;0;255" />
+		<Item prefab="Image" name="SponsorLogo" x="2" y="-4" width="508" height="280" defaultimage="C:\ImagesTableau\Sponsors\Comte.png" animator="None"/>
+	</Scene>
+	<Scene scenename="Video" camera="Camera3">
+		<Item prefab="VideoPlayer" name="VideoPlayer" placeholder="VideoPlaceHolder" x="0" y="0" width="512" height="288" />
+	</Scene>
+	<Scene scenename="TeamPresentation" camera="Camera4">
+		<Item prefab="Panel" name="Panel" x="0" y="0" width="512" height="288" imagecolor="49;77;121;255" />
+		<Item prefab="AnimationPrefab" name="AnimationPlaceHolder" x="256" y="-144" />
+		<Item prefab="Text" name="Name" x="-512" y="-158"  width="285" height="130" textcolor="255;255;255;255" defaulttext="XXX Yyy" font="Droid Sans Mono;25" maxfontsize="150" minfontsize="1" animator="SlideIn">
+			<Animation name="In" x="-512;2" y="-158;-158" duration="0;1"/>
+			<Animation name="InitialPosition" x="-512;-512" y="-158;-158" duration="0;0.01"/>
+			<Animation name="Next" x="2;-512;2" y="-158;-158;-158" duration="0;1;2"/>
+			<Animation name="Out" x="2;-512" y="-158;-158" duration="0;1"/>
+		</Item>
+		<Item prefab="Text" name="Position" x="-512" y="-295" width="499" height="65" textcolor="255;255;255;255" defaulttext="Défenseur" font="Droid Sans Mono;25" maxfontsize="150" minfontsize="1" animator="SlideIn">
+			<Animation name="In" x="-512;7" y="-295;-295" duration="0;1"/>
+			<Animation name="InitialPosition" x="-512;-512" y="-295;-295" duration="0;0.01"/>
+			<Animation name="Next" x="7;-512;7" y="-295;-295;-295" duration="0;1;2"/>
+			<Animation name="Out" x="7;-512" y="-295;-295" duration="0;1"/>
+		</Item>
+		<Item prefab="Text" name="Bib" x="-135" y="-25" width="122" height="120" textcolor="255;255;255;255" defaulttext="10" font="Droid Sans Mono;25" maxfontsize="150" minfontsize="1" animator="SlideIn">
+			<Animation name="In" x="-135;132" y="-25;-25" duration="0;1"/>
+			<Animation name="InitialPosition" x="-135;-135" y="-25;-25" duration="0;0.01"/>
+			<Animation name="Next" x="132;-135;132" y="-25;-25;-25" duration="0;1;2"/>
+			<Animation name="Out" x="132;-135" y="-25;-25" duration="0;1"/>
+		</Item>
+		<Item prefab="Image" name="Picture" x="514" y="-4" width="218" height="280" defaultimage="C:\ImagesTableau\Joueurs\PlaceHolder.png" animator="SlideIn">
+			<Animation name="In" x="514;290" y="-4;-4" duration="0;1"/>
+			<Animation name="InitialPosition" x="514;514" y="-4;-4" duration="0;0.01"/>
+			<Animation name="Next" x="290;514;290" y="-4;-4;-4" duration="0;1;2"/>
+			<Animation name="Out" x="290;514" y="-4;-4" duration="0;1"/>
+		</Item>
+		<Item prefab="Image" name="ClubLogo" x="11" y="-6" width="110" height="138" defaultimage="C:\ImagesTableau\Logo\FCVT.png" animator="None"/>
+	</Scene>
+	<Scene scenename="Goal" camera="Camera5">
+		<Item prefab="Panel" name="Panel" x="0" y="0" width="512" height="288" imagecolor="49;77;121;255" />
+		<Item prefab="ScenePrefab" name="ScenePlaceHolder" x="256" y="-144" />
+		<Item prefab="Image" name="ClubLogo" x="11" y="-6" width="110" height="138" defaultimage="C:\ImagesTableau\Logo\FCVT.png" fromparameter="0" animator="None"/>
+		<Item prefab="Text" name="NameGoal" x="2" y="-158"  width="285" height="130" textcolor="255;255;255;255" defaulttext="XXX Yyy" font="Droid Sans Mono;25" maxfontsize="150" minfontsize="1" fromparameter="1" animator="None"/>
+		<Item prefab="Text" name="TextGoal" x="-40" y="-2"  width="499" height="75" textcolor="255;255;255;255" defaulttext="Goal" font="Droid Sans Mono;25" maxfontsize="150" minfontsize="1" fromparameter="1" animator="None"/>
+		<Item prefab="Image" name="PictureGoal" x="290" y="-4" width="218" height="280" defaultimage="C:\ImagesTableau\Joueurs\PlaceHolder.png" fromparameter="1" animator="None"/>
+	</Scene>
+	<Scene scenename="GameBall" camera="Camera6">
+		<Item prefab="Panel" name="Panel" x="0" y="0" width="512" height="288" imagecolor="0;0;0;255" />
+		<Item prefab="ScenePrefab" name="ScenePlaceHolder" x="256" y="-144" />
+		<Item prefab="Image" name="Ballon1Logo" x="10" y="-65" width="60" height="60" defaultimage="C:\ImagesTableau\Logo\Ball.png" fromparameter="0" animator="None"/>
+		<Item prefab="Image" name="Ballon2Logo" x="442" y="-65" width="60" height="60" defaultimage="C:\ImagesTableau\Logo\Ball.png" fromparameter="0" animator="None"/>
+		<Item prefab="Text" name="Title" x="5" y="5"  width="502" height="80" textcolor="255;255;255;255" defaulttext="XXX Yyy" font="Droid Sans Mono;25" maxfontsize="150" minfontsize="1" fromparameter="1" animator="None"/>
+		<Item prefab="Text" name="Title2" x="5" y="-67"  width="502" height="55" textcolor="255;255;255;255" defaulttext="Goal" font="Droid Sans Mono;25" maxfontsize="150" minfontsize="1" fromparameter="1" animator="None"/>
+		<Item prefab="Text" name="Line1" x="-514" y="-122" width="502" height="55" textcolor="255;255;255;255" defaulttext="Test" font="Droid Sans Mono;25" maxfontsize="150" minfontsize="1" animator="SlideIn">
+			<Animation name="In" x="-514;5" y="-122;-122" duration="0;1"/>
+			<Animation name="InitialPosition" x="-514;-514" y="-122;-122" duration="0;0.01"/>
+			<Animation name="Next" x="5;-514;5" y="-122;-122;-122" duration="0;1;2"/>
+			<Animation name="Out" x="5;-514" y="-122;-122" duration="0;1"/>
+		</Item>
+		<Item prefab="Text" name="Line2" x="-514" y="-177" width="502" height="55" textcolor="255;255;255;255" defaulttext="Test" font="Droid Sans Mono;25" maxfontsize="150" minfontsize="1" animator="SlideIn">
+			<Animation name="In" x="-514;5" y="-177;-177" duration="0;1"/>
+			<Animation name="InitialPosition" x="-514;-514" y="-177;-177" duration="0;0.01"/>
+			<Animation name="Next" x="5;-514;5" y="-177;-177;-177" duration="0;1;2"/>
+			<Animation name="Out" x="5;-514" y="-177;-177" duration="0;1"/>
+		</Item>
+		<Item prefab="Text" name="Line3" x="-514" y="-232" width="502" height="55" textcolor="255;255;255;255" defaulttext="Test" font="Droid Sans Mono;25" maxfontsize="150" minfontsize="1" animator="SlideIn">
+			<Animation name="In" x="-514;5" y="-232;-232" duration="0;1"/>
+			<Animation name="InitialPosition" x="-514;-514" y="-232;-232" duration="0;0.01"/>
+			<Animation name="Next" x="5;-514;5" y="-232;-232;-232" duration="0;1;2"/>
+			<Animation name="Out" x="5;-514" y="-232;-232" duration="0;1"/>
+		</Item>
+	</Scene>
+	<Scene scenename="TeamPresentation2" camera="Camera7">
+		<Item prefab="Panel" name="Panel" x="0" y="0" width="512" height="288" imagecolor="49;77;121;255" />
+		<Item prefab="AnimationPrefab" name="AnimationPlaceHolder" x="256" y="-144" />
+		<Item prefab="Text" name="Name" x="-512" y="-167" width="499" height="65" textcolor="255;255;255;255" defaulttext="XXX Yyy" font="Droid Sans Mono;25" maxfontsize="150" minfontsize="1" animator="SlideIn">
+			<Animation name="In" x="-512;7" y="-167;-167" duration="0;1"/>
+			<Animation name="InitialPosition" x="-512;-512" y="-167;-167" duration="0;0.01"/>
+			<Animation name="Next" x="7;-512;7" y="-167;-167;-167" duration="0;1;2"/>
+			<Animation name="Out" x="7;-512" y="-167;-167" duration="0;1"/>
+		</Item>
+		<Item prefab="Text" name="Position" x="-512" y="-224" width="499" height="65" textcolor="255;255;255;255" defaulttext="Défenseur" font="Droid Sans Mono;25" maxfontsize="150" minfontsize="1" animator="SlideIn">
+			<Animation name="In" x="-512;7" y="-224;-224" duration="0;1"/>
+			<Animation name="InitialPosition" x="-512;-512" y="-224;-224" duration="0;0.01"/>
+			<Animation name="Next" x="7;-512;7" y="-224;-224;-224" duration="0;1;2"/>
+			<Animation name="Out" x="7;-512" y="-224;-224" duration="0;1"/>
+		</Item>
+		<Item prefab="Text" name="Bib" x="-135" y="-25" width="122" height="120" textcolor="255;255;255;255" defaulttext="10" font="Droid Sans Mono;25" maxfontsize="150" minfontsize="1" animator="SlideIn">
+			<Animation name="In" x="-135;132" y="-25;-25" duration="0;1"/>
+			<Animation name="InitialPosition" x="-135;-135" y="-25;-25" duration="0;0.01"/>
+			<Animation name="Next" x="132;-135;132" y="-25;-25;-25" duration="0;1;2"/>
+			<Animation name="Out" x="132;-135" y="-25;-25" duration="0;1"/>
+		</Item>
+		<Item prefab="Image" name="Picture" x="-122" y="-7" width="121" height="155" defaultimage="C:\ImagesTableau\Joueurs\PlaceHolder.png" animator="SlideIn">
+			<Animation name="In" x="-122;12" y="-7;-7" duration="0;1"/>
+			<Animation name="InitialPosition" x="-122;-122" y="-7;-7" duration="0;0.01"/>
+			<Animation name="Next" x="12;-122;12" y="-7;-7;-7" duration="0;1;2"/>
+			<Animation name="Out" x="12;-122" y="-7;-7" duration="0;1"/>
+		</Item>
+		<Item prefab="Image" name="ClubLogo" x="395" y="-6" width="110" height="138" defaultimage="C:\ImagesTableau\Logo\FCDiaspora.png" animator="None"/>
+	</Scene>
+	<Scene scenename="Goal2" camera="Camera8">
+		<Item prefab="Panel" name="Panel" x="0" y="0" width="512" height="288" imagecolor="49;77;121;255" />
+		<Item prefab="ScenePrefab" name="ScenePlaceHolder" x="256" y="-144" />
+		<Item prefab="Image" name="ClubLogo" x="5" y="-5" width="159" height="200" defaultimage="C:\ImagesTableau\Logo\FCDiaspora.png" fromparameter="0" animator="None"/>
+		<Item prefab="Text" name="NameGoal" x="2" y="-158"  width="285" height="130" textcolor="255;255;255;255" defaulttext="XXX Yyy" font="Droid Sans Mono;25" maxfontsize="150" minfontsize="1" fromparameter="1" animator="None"/>
+		<Item prefab="Text" name="TextGoal" x="7" y="-2"  width="499" height="80" textcolor="255;255;255;255" defaulttext="Goal" font="Droid Sans Mono;25" maxfontsize="150" minfontsize="1" fromparameter="1" animator="None"/>
+		<Item prefab="Image" name="PictureGoal" x="351" y="-5" width="156" height="200" defaultimage="C:\ImagesTableau\Joueurs\PlaceHolder.png" fromparameter="1" animator="None"/>
+	</Scene>
+	<Scene scenename="GoalVideo" camera="Camera9">
+		<Item prefab="Panel" name="Panel" x="0" y="0" width="512" height="288" imagecolor="0;0;0;255" />
+		<Item prefab="VideoPlayerGoal" name="VideoPlayer" placeholder="VideoPlace2" x="0" y="0" width="512" height="288" />
+		<Item prefab="ScenePrefab" name="ScenePlaceHolder" x="256" y="-144" />
+		<Item prefab="Image" name="ClubLogo" x="11" y="-6" width="110" height="138" defaultimage="C:\ImagesTableau\Logo\FCVT.png" fromparameter="0" animator="None"/>
+		<Item prefab="Text" name="NameGoal" x="2" y="-158"  width="285" height="130" textcolor="255;255;255;255" defaulttext="XXX Yyy" font="Droid Sans Mono;25" maxfontsize="150" minfontsize="1" fromparameter="1" animator="None"/>
+		<Item prefab="Text" name="TextGoal" x="-40" y="-2"  width="499" height="75" textcolor="255;255;255;255" defaulttext="Goal" font="Droid Sans Mono;25" maxfontsize="150" minfontsize="1" fromparameter="1" animator="None"/>
+	</Scene>
+</Scenes>
