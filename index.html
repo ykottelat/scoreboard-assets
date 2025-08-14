@@ -24,7 +24,6 @@
       --score-gap: 12px;                     /* vertical gap under the logos (fallback) */
     }
 
-    /* Global: prevent horizontal scrollbars */
     *,*::before,*::after{ box-sizing:border-box; }
     html,body{ width:100%; max-width:100%; overflow-x:hidden; height:100%; }
     body{
@@ -34,7 +33,6 @@
       display:grid; place-items:center;
     }
 
-    /* Board */
     .board{
       width:min(100dvw, 1024px, calc(100dvh * (16/9)));
       aspect-ratio:16/9; height:auto;
@@ -59,7 +57,6 @@
       display:grid; place-items:center;
       font-variant-numeric:tabular-nums; letter-spacing:.04em; text-shadow:var(--digit-shadow);
       font-weight:700;
-      /* Auto-fit text inside box */
       font-size: min(calc(var(--clock-w)/5.2), calc(var(--clock-h)*0.8));
       line-height:1;
       border-radius:16px; border:2px solid transparent;
@@ -67,29 +64,26 @@
       z-index:10;
     }
 
-    /* === LOGOS: centered in left/right spaces beside the centered clock === */
+    /* === LOGOS === */
     .logo{
       position:absolute; top:0;
       width:var(--logo-w); height:var(--logo-h);
       object-fit:contain; filter:drop-shadow(0 4px 8px rgba(0,0,0,.5));
     }
-    /* midpoint between left edge and clock-left, minus half logo width */
     .logo.home{
       left: calc( (50% - (var(--clock-w) / 2)) / 2 - (var(--logo-w) / 2) );
     }
-    /* midpoint between clock-right and right edge, minus half logo width */
     .logo.away{
       left: calc( ((50% + (var(--clock-w) / 2)) + 100%) / 2 - (var(--logo-w) / 2) );
     }
 
-    /* === SPONSOR: centered directly under the clock, same width as the clock === */
+    /* === SPONSOR === */
     .sponsor-top{
       position:absolute;
       left:50%;
       transform:translateX(-50%);
-      /* place below whichever is taller (logos vs clock) */
       top: calc( max(var(--logo-h), var(--clock-h)) + var(--sponsor-gap) );
-      width: var(--clock-w);               /* <- lock to clock width */
+      width: var(--clock-w);
       display:grid; place-items:center;
       z-index:5;
     }
@@ -98,12 +92,12 @@
       filter: drop-shadow(0 6px 16px rgba(0,0,0,.6));
     }
 
-    /* Scores: centered under their respective logos */
+    /* === SCORES === */
     .score{
       position: absolute;
-      top: calc(var(--logo-h) + var(--score-gap));  /* directly under logos */
-      width: var(--logo-w);                          /* same width as logo box */
-      height: var(--clock-h);                        /* same height as the clock box */
+      top: calc(var(--logo-h) + var(--score-gap));
+      width: var(--logo-w);
+      height: var(--clock-h);
       display: grid; place-items: center;
 
       font-variant-numeric: tabular-nums;
@@ -111,7 +105,6 @@
       text-shadow: var(--digit-shadow);
       line-height: 1;
 
-      /* Auto-fit digits; cap by clock height (same max as clock) */
       font-size: min(
         calc(var(--clock-h) * 0.8),
         calc(var(--logo-w) / 2.2)
@@ -119,7 +112,6 @@
 
       z-index: 7;
     }
-
     .score.home{
       left: calc( (50% - (var(--clock-w) / 2)) / 2 - (var(--logo-w) / 2) );
     }
@@ -146,7 +138,6 @@
       pointer-events:none; display:grid; grid-template-columns:1fr 1fr;
       padding:0 clamp(8px,2vw,24px); font-size:clamp(10px,2.2vw,22px); color:#d3d3d3; opacity:.85;
     }
-    .labels div{ white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
     .labels .home{ justify-self:start; } .labels .away{ justify-self:end; }
 
     .controls{
@@ -163,10 +154,10 @@
     .controls .spacer{ width:1px; height:20px; background:rgba(255,255,255,.18); margin:0 4px; }
     .clean .controls{ display:none; }
 
-    /* === XML LAYERS (always-on styles; not gated by @supports) === */
+    /* === XML LAYERS === */
     .xml-layers{
       position:absolute; inset:0;
-      pointer-events:none;           /* let clicks pass through unless you change it */
+      pointer-events:none;
       z-index:12;
       container-type:size;
     }
@@ -187,9 +178,9 @@
     body.xmlMode .middle,
     body.xmlMode .labels,
     body.xmlMode .bottom,
-    body.xmlMode .controls { display:none !important; } /* <- fixed selector */
+    body.xmlMode .controls { display:none !important; }
 
-    /* ===== Responsive extras that use container query units ===== */
+    /* ===== Container-query responsive extras ===== */
     @supports (width: 1cqw){
       :root{
         --logo-w-p:21.484375;   /* 220/1024*100 */
@@ -308,21 +299,33 @@
       }
     })();
 
-    /* ================= XML Layer Engine with Animations (targets 1024×576) ================
-       Usage:
-         - Open with:
-           index.html?xml=Football.xml&scene=GameClock&autoplay=In
-         - Server can also push {type:'xml', url, scene, autoplay} or {type:'scene'|'anim'}.
-       ======================================================================================*/
+    /* ===================== Tiny [WS] logger ===================== */
+    const WS_HISTORY = [];
+    const MAX_HISTORY = 200;
+    const WS_FILTER = (__params.get('wslog') || '*').split(',').map(s => s.trim().toLowerCase());
+    const shouldLog = (type) => WS_FILTER[0] === '*' || WS_FILTER.includes((type||'').toLowerCase());
+    function wsLog(dir, msg){
+      const type = (msg?.type || '(no type)').toLowerCase();
+      if (!shouldLog(type)) return;
+      const now = new Date();
+      const ts = `${now.toLocaleTimeString([], {hour12:false})}.${String(now.getMilliseconds()).padStart(3,'0')}`;
+      let brief = '';
+      switch (type){
+        case 'state': brief = `scene=${msg.scene ?? msg.xml?.scene ?? '-'} running=${!!msg.clock?.running}`; break;
+        case 'scene': brief = `name=${msg.name || msg.scene} autoplay=${msg.autoplay || '-'}`; break;
+        case 'anim':  brief = `name=${msg.name || 'In'}`; break;
+        case 'xml':   brief = `url=${msg.url}`; break;
+        case 'score': brief = `home=${msg.home} away=${msg.away}`; break;
+        case 'teams': brief = `${msg.homeName||''} vs ${msg.awayName||''}`; break;
+      }
+      console.log(`[WS] ${dir} ${ts} ${type}${brief ? ' — ' + brief : ''}`, msg);
+      WS_HISTORY.push({ dir, ts, type, msg });
+      if (WS_HISTORY.length > MAX_HISTORY) WS_HISTORY.shift();
+    }
+
+    /* ================= XML Layer Engine (always available) ================= */
     (function(){
       const params = __params;
-      const xmlUrl = params.get('xml');
-      const initialScene = params.get('scene') || null;
-      const autoPlayName = (params.get('autoplay') || 'In');
-
-      if (!xmlUrl) return;                 // only activate if ?xml=... is present
-      document.body.classList.add('xmlMode');
-
       const LAYERS = document.getElementById('xmlLayers');
       const TARGET_W = 1024, TARGET_H = 576;
 
@@ -352,7 +355,7 @@
         const frames = [];
         for (let i = 0; i < n; i++){
           const leftPx = xList[i] * sx;
-          const topPx  = (-yList[i]) * sy;  // XML y-down → CSS y-down (negative to move up)
+          const topPx  = yList[i] * sy; // y-down
           frames.push({
             left:  toPct(leftPx, TARGET_W) + '%',
             top:   toPct(topPx,  TARGET_H) + '%',
@@ -370,7 +373,7 @@
       let sceneRegistry = null; // { tracks: Map<HTMLElement, Map<string, AnimDef>>, activeAnims: Map<HTMLElement, Animation> }
 
       function renderScene(sceneEl){
-        // Cancel any running animations from previous scene
+        // Cancel any running animations
         if (sceneRegistry && sceneRegistry.activeAnims){
           for (const anim of sceneRegistry.activeAnims.values()){ try{ anim.cancel(); }catch(e){} }
         }
@@ -403,7 +406,7 @@
           const h = +(it.getAttribute('height') || 0);
 
           const leftPx = x * sx;
-          let topPx = y * sy; // assume y increases downward
+          const topPx  = y * sy; // y-down
           const widthPx  = w * sx;
           const heightPx = h * sy;
 
@@ -449,7 +452,7 @@
           }
 
           LAYERS.appendChild(el);
-          window._xmlByName[name] = el;   // <-- index by name
+          window._xmlByName[name] = el;   // index by name
 
           // Parse animations on this item
           const animNodes = [...it.querySelectorAll(':scope > Animation')];
@@ -479,37 +482,13 @@
             }
           }
         }
-      const built = [];
-      
-        function place(el, x, y, w, h, sx, sy, yNeg){
-          const leftPx = x * sx;
-          const topPx  = (yNeg ? -y : y) * sy;
-          el.style.left   = (leftPx / TARGET_W * 100) + '%';
-          el.style.top    = (topPx  / TARGET_H * 100) + '%';
-          el.style.width  = (w * sx / TARGET_W * 100) + '%';
-          el.style.height = (h * sy / TARGET_H * 100) + '%';
-          built.push({ el, leftPx, topPx, w:w*sx, h:h*sy });
-          // 1st pass: yNeg = false
-          // ...create elements and call place(..., yNeg=false)
-        
-          // If every item is off-screen, flip and re-place:
-          const off = built.every(b =>
-            b.topPx + b.h < 0 || b.topPx > TARGET_H || b.leftPx + b.w < 0 || b.leftPx > TARGET_W
-          );
-          if (off){
-            console.warn('[XML] items off-screen, flipping Y');
-            for (const it of [...LAYERS.children]) it.remove();
-            built.length = 0;
-            // re-create again but with yNeg = true
-            // (call place with yNeg=true for each item)
-        }
       }
 
       function play(animName){
         if (!sceneRegistry) return;
         const key = (animName || 'In').toLowerCase();
 
-        // Cancel any currently running animations so we can restart cleanly
+        // Cancel running animations
         for (const [el, running] of sceneRegistry.activeAnims){
           try { running.cancel(); } catch(e){}
           sceneRegistry.activeAnims.delete(el);
@@ -528,132 +507,57 @@
         }
       }
 
-      // Expose helpers
+      // Expose helpers (always available)
       window.playXML = play;
-      window.setXMLScene = (name) => {
-        if (!window._xmlDOM) return;
-        const next = window._xmlDOM.querySelector(`Scene[scenename="${CSS.escape(name)}"]`);
-        if (next){
-          renderScene(next);
-          play('InitialPosition');
-          setTimeout(() => play(autoPlayName), 10);
-        }
-      };
-
-      // Fetch and render
-      async function loadAndRender(){
-        let xmlText = '';
-        try{
-          const res = await fetch(xmlUrl, { cache:'no-store' });
-          xmlText = await res.text();
-        } catch(e){
-          console.error('Failed to load XML:', e);
-          return;
-        }
-        const dom = new DOMParser().parseFromString(xmlText, 'text/xml');
-        window._xmlDOM = dom;
-
-        let sceneEl = null;
-      // when choosing the initial scene
-      let sceneEl = initialScene
-        ? dom.querySelector(`Scene[scenename="${CSS.escape(initialScene)}"], Scene[name="${CSS.escape(initialScene)}"]`)
-        : null;
-      if (!sceneEl) sceneEl = dom.querySelector('Scene');
-      
-      // when switching scenes later
       window.setXMLScene = (name) => {
         if (!window._xmlDOM) return;
         const next = window._xmlDOM.querySelector(
           `Scene[scenename="${CSS.escape(name)}"], Scene[name="${CSS.escape(name)}"]`
         ) || window._xmlDOM.querySelector('Scene');
-        if (!next) return;
-        renderScene(next);
-        play('InitialPosition'); setTimeout(() => play('In'), 10);
+        if (next){
+          renderScene(next);
+          play('InitialPosition');
+          setTimeout(() => play('In'), 10);
+          document.body.classList.add('xmlMode');
+        }
       };
-      // also expose loader for WS-triggered XML changes
+
       window.loadXML = async (url, scene, autoplay) => {
         console.log('[WS][xml] loading', url);
         let res;
-        try {
-          res = await fetch(url, { cache:'no-store' });
-        } catch (e) {
-          console.error('[WS][xml] fetch failed:', e);
-          return; // don't enter xmlMode
-        }
-        if (!res.ok) {
-          console.error('[WS][xml] HTTP', res.status, res.statusText);
-          return; // don't enter xmlMode
-        }
-      
+        try { res = await fetch(url, {cache:'no-store'}); }
+        catch(e){ console.error('[WS][xml] fetch failed:', e); return; }
+        if (!res.ok){ console.error('[WS][xml] HTTP', res.status, res.statusText); return; }
+
         const xmlText = await res.text();
         const dom = new DOMParser().parseFromString(xmlText, 'text/xml');
         const parseErr = dom.querySelector('parsererror');
-        if (parseErr) {
-          console.error('[WS][xml] parse error:', parseErr.textContent?.trim());
-          return; // don't enter xmlMode
-        }
+        if (parseErr){ console.error('[WS][xml] parse error:', parseErr.textContent?.trim()); return; }
         window._xmlDOM = dom;
-      
-        // accept both Scene@scenename and Scene@name
-        const sel = scene
-          ? `Scene[scenename="${CSS.escape(scene)}"], Scene[name="${CSS.escape(scene)}"]`
-          : 'Scene';
-        const target = dom.querySelector(sel) || dom.querySelector('Scene');
-        if (!target) {
-          console.warn('[WS][xml] no <Scene> found');
-          return; // don't enter xmlMode
-        }
-      
-        renderScene(target);           // your existing renderer
-        play('InitialPosition');       // optional
+
+        const target = scene
+          ? dom.querySelector(`Scene[scenename="${CSS.escape(scene)}"], Scene[name="${CSS.escape(scene)}"]`) || dom.querySelector('Scene')
+          : dom.querySelector('Scene');
+        if (!target){ console.warn('[WS][xml] no <Scene>'); return; }
+
+        renderScene(target);
+        play('InitialPosition');
         setTimeout(() => play(autoplay || 'In'), 10);
-      
-        // only now hide the built-ins
+
+        // Enter xml mode only after success
         document.body.classList.add('xmlMode');
       };
-      loadAndRender();
+
+      // Auto-load if ?xml= is present
+      const xmlUrl = params.get('xml');
+      const initialScene = params.get('scene') || null;
+      const autoPlayName = (params.get('autoplay') || 'In');
+      if (xmlUrl) { window.loadXML(xmlUrl, initialScene, autoPlayName); }
     })();
 
     /* ================= Utilities ================= */
     const qs = (s) => document.querySelector(s);
     const pad2 = (n) => String(n).padStart(2, '0');
-
-    // --- tiny [WS] logger -----------------------------------------
-    const WS_HISTORY = [];
-    const MAX_HISTORY = 200;
-    
-    // ?wslog=scene,anim  → only log those types; default "*" logs all
-    const WS_FILTER = (new URLSearchParams(location.search).get('wslog') || '*')
-      .split(',').map(s => s.trim().toLowerCase());
-    
-    function shouldLog(type){
-      return WS_FILTER[0] === '*' || WS_FILTER.includes((type||'').toLowerCase());
-    }
-    
-    function wsLog(dir, msg){
-      const type = (msg?.type || '(no type)').toLowerCase();
-      if (!shouldLog(type)) return;
-    
-      const now = new Date();
-      const ts = `${now.toLocaleTimeString([], {hour12:false})}.${String(now.getMilliseconds()).padStart(3,'0')}`;
-    
-      // brief summary per type for readability
-      let brief = '';
-      switch (type){
-        case 'state': brief = `scene=${msg.scene ?? msg.xml?.scene ?? '-'} running=${!!msg.clock?.running}`; break;
-        case 'scene': brief = `name=${msg.name || msg.scene} autoplay=${msg.autoplay || '-'}`; break;
-        case 'anim':  brief = `name=${msg.name || 'In'}`; break;
-        case 'xml':   brief = `url=${msg.url}`; break;
-        case 'score': brief = `home=${msg.home} away=${msg.away}`; break;
-        case 'teams': brief = `${msg.homeName||''} vs ${msg.awayName||''}`; break;
-      }
-    
-      console.log(`[WS] ${dir} ${ts} ${type}${brief ? ' — ' + brief : ''}`, msg);
-    
-      WS_HISTORY.push({ dir, ts, type, msg });
-      if (WS_HISTORY.length > MAX_HISTORY) WS_HISTORY.shift();
-    }
-    // ---------------------------------------------------------------
 
     /* ================= DOM refs ================= */
     const gameClockEl = qs('#gameClock');
@@ -698,9 +602,9 @@
     };
     requestAnimationFrame(tickGameClock);
 
-    /* ===== Time of day (also mirror to XML "TOD") ===== */
+    /* ===== Time of day (uses skew if available) ===== */
     const tickTOD = () => {
-      const now = new Date();
+      const now = new Date(Date.now() - (net ? skewMs : 0));
       const str = `${pad2(now.getHours())}:${pad2(now.getMinutes())}:${pad2(now.getSeconds())}`;
       todEl.textContent = str;
       const by = window._xmlByName || {};
@@ -787,65 +691,53 @@
 
     /* ================= WebSocket sync (read-only client) ================= */
     (function(){
-      const defaultWS = (location.protocol === 'https:' ? 'wss://' : 'ws://') + location.host + '/ws';
-      const wsUrl = params.get('ws') || defaultWS;
+      const defaultWS =
+        __params.get('ws') ||
+        (location.protocol.startsWith('http')
+          ? (location.protocol === 'https:' ? 'wss://' : 'ws://') + location.host + '/ws'
+          : ''); // file:// → empty; pass ?ws=ws://localhost:PORT/ws
+      const wsUrl = defaultWS;
       let ws;
 
       function connectWS(){
-        if (!wsUrl) return;
+        if (!wsUrl) {
+          console.warn('[WS] no URL; pass ?ws=ws://localhost:5000/ws');
+          return;
+        }
 
         console.info('[WS] connecting to', wsUrl);
         ws = new WebSocket(wsUrl);
+
         ws.addEventListener('open', () => {
           console.info('[WS] open');
+          const c = document.getElementById('controls');
+          if (c && (__params.get('clean') === '1' || __params.has('ws'))) c.style.display = 'none';
+
           const hello = { type:'hello', role:'viewer' };
           ws.send(JSON.stringify(hello));
           wsLog('→', hello);
         });
-//          ws.addEventListener('open', () => {
-//          console.info('[WS] open');
-//          // Hide controls on connect as well
-//          const c = document.getElementById('controls');
-//          if (c && (params.get('clean') === '1' || params.has('ws'))) c.style.display = 'none';
-//          ws.send(JSON.stringify({ type:'hello', role:'viewer' }));
-//        });
+
         ws.addEventListener('message', (evt) => {
           let msg;
           try { msg = JSON.parse(evt.data); }
           catch(e){ console.warn('[WS] bad JSON', evt.data); return; }
           wsLog('←', msg);
-          handleServerMessage(msg); // your existing switch(msg.type) handler
+          handleServerMessage(msg);
         });
 
-//        ws.addEventListener('message', (evt) => {
-//          try { handleServerMessage(JSON.parse(evt.data)); } catch(e){ console.warn('bad WS msg', e); }
-//        });
-        ws.addEventListener('close', () => { console.warn('[WS] close'); setTimeout(connectWS, 1000); });
-        ws.addEventListener('error', () => { console.error('[WS] error'); try{ ws.close(); }catch(_){} });
-
-        // Optional: wrap send() so ANY future sends are logged automatically
+        // log any future sends automatically
         const _send = ws.send.bind(ws);
         ws.send = (data) => {
           try { wsLog('→', JSON.parse(data)); } catch {}
           return _send(data);
         };
-        if (new URLSearchParams(location.search).has('logpanel')){
-          const box = Object.assign(document.createElement('pre'), {
-            id:'wsPanel', style:`
-              position:fixed; inset:auto 8px 8px 8px; max-height:35vh; overflow:auto;
-              background:rgba(0,0,0,.6); color:#eee; padding:8px; border-radius:8px; font:12px/1.2 monospace;
-              z-index:99999;`
-          });
-          document.body.appendChild(box);
-          const old = console.log;
-          console.log = (...a) => { old(...a); if (String(a[0]||'').startsWith('[WS]')) {
-            box.textContent += a.map(x => (typeof x==='string' ? x : JSON.stringify(x))).join(' ') + '\n';
-            box.scrollTop = box.scrollHeight;
-          }};
-        }
+
+        ws.addEventListener('close', () => { console.warn('[WS] close'); setTimeout(connectWS, 1000); });
+        ws.addEventListener('error', () => { console.error('[WS] error'); try{ ws.close(); }catch(_){} });
       }
-      
-        function handleServerMessage(msg){
+
+      function handleServerMessage(msg){
         switch ((msg.type||'').toLowerCase()){
           case 'state':{
             if (typeof msg.serverNowMs === 'number') skewMs = Date.now() - msg.serverNowMs;
