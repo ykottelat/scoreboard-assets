@@ -744,30 +744,30 @@
 
         console.info('[WS] connecting to', wsUrl);
         ws = new WebSocket(wsUrl);
-//        ws.addEventListener('open', () => {
-//          console.info('[WS] open');
-//          const hello = { type:'hello', role:'viewer' };
-//          ws.send(JSON.stringify(hello));
-//          wsLog('→', hello);
-//        });
-          ws.addEventListener('open', () => {
+        ws.addEventListener('open', () => {
           console.info('[WS] open');
-          // Hide controls on connect as well
-          const c = document.getElementById('controls');
-          if (c && (params.get('clean') === '1' || params.has('ws'))) c.style.display = 'none';
-          ws.send(JSON.stringify({ type:'hello', role:'viewer' }));
+          const hello = { type:'hello', role:'viewer' };
+          ws.send(JSON.stringify(hello));
+          wsLog('→', hello);
         });
-//        ws.addEventListener('message', (evt) => {
-//          let msg;
-//          try { msg = JSON.parse(evt.data); }
-//          catch(e){ console.warn('[WS] bad JSON', evt.data); return; }
-//          wsLog('←', msg);
-//          handleServerMessage(msg); // your existing switch(msg.type) handler
+//          ws.addEventListener('open', () => {
+//          console.info('[WS] open');
+//          // Hide controls on connect as well
+//          const c = document.getElementById('controls');
+//          if (c && (params.get('clean') === '1' || params.has('ws'))) c.style.display = 'none';
+//          ws.send(JSON.stringify({ type:'hello', role:'viewer' }));
 //        });
-
         ws.addEventListener('message', (evt) => {
-          try { handleServerMessage(JSON.parse(evt.data)); } catch(e){ console.warn('bad WS msg', e); }
+          let msg;
+          try { msg = JSON.parse(evt.data); }
+          catch(e){ console.warn('[WS] bad JSON', evt.data); return; }
+          wsLog('←', msg);
+          handleServerMessage(msg); // your existing switch(msg.type) handler
         });
+
+//        ws.addEventListener('message', (evt) => {
+//          try { handleServerMessage(JSON.parse(evt.data)); } catch(e){ console.warn('bad WS msg', e); }
+//        });
         ws.addEventListener('close', () => { console.warn('[WS] close'); setTimeout(connectWS, 1000); });
         ws.addEventListener('error', () => { console.error('[WS] error'); try{ ws.close(); }catch(_){} });
       }
