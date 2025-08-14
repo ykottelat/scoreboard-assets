@@ -334,6 +334,183 @@
   </div>
 
   <script>
+	  /* ================== Server Bridge (WebSocket) ==================
+	   Works with your existing server. Message types supported:
+		 - {type:'state', ...}  // bulk update (clock/score/teams/xml/scene)
+		 - {type:'teams', homeName, awayName, homeLogo, awayLogo, sponsor}
+		 - {type:'score', home, away}
+		 - {type:'clock', running, startEpochMs, carryMs, serverNowMs}
+		 - {type:'scene', name, autoplay}         // autoplay optional
+		 - {type:'anim', name}                    // 'In' | 'Next' | 'Out' | 'InitialPosition'
+		 - {type:'xml', url, scene, autoplay}     // hot-load a new XML
+		 - {type:'ping', id}                      // latency check (we reply with 'pong')
+	   Fallbacks:
+		 - Also accepts {cmd:'scene'|'anim'|...} and {action:'scene'|'anim'|...}
+	=================================================================*/
+
+	(function(){
+	  const qs = (s) => document.querySelector(s);
+	  const params = new URLSearchParams(location.search);
+
+	  // Expose minimal hooks from the XML engine
+	  // (These exist if you kept the previous engine code.)
+	  const hasEngine = () => typeof window.setXMLScene === 'function' &&
+							   typeof window.playXML === 'function';
+	  // Add a loader helper if the engine from last step is in use
+	  async function loadXML(url, scene, autoplay){
+		// fetch & parse, then render + play
+		const res = await fetch(url, {cache:'no-store'});
+		const xmlText = await res.text();
+		const dom = new DOMParser().parseFromString(xmlText, 'text/xml');
+		window._xmlDOM = dom;
+		// default: first scene
+		const first = dom.querySelector('Scene');
+		if (!first) return;
+		const target = scene
+		  ? dom.querySelector(`Scene[scenename="${CSS.escape(scene)}"]`) || first
+		  : first;
+		// Reuse engine's internal renderer via setXMLScene
+		// We jump scenes by name to reuse the same code-path:
+		window.setXMLScene(target.getAttribute('scenename') || target.getAttribute('name') || ''); 
+		// Honor autoplay
+		window.playXML('InitialPosition');
+		setTimeout(() => window.playXML(autoplay || 'In'), 10);
+	  }
+	  // Make loader public for convenience (optional)
+	  window.loadXML = loadXML;
+
+	  // Default WS url = same host at /ws unless ?ws= provided
+	  const defaultWS = (location.protocol === 'https:' ? 'wss://' : 'ws://') + location.host + '/ws';
+	  const wsUrl = params.get('ws') || defaultWS;
+
+	  // Time skew handling (for clock sync)
+	  let skewMs = 0;
+	  const gameClockEl = qs('#gameClock');
+	  const homeScoreEl = qs('#homeScore');
+	  const awayScoreEl = qs('#awayScore');
+
+	  // Helpers to apply state
+	  function applyTeams(t){
+		if (t.homeName !== undefined) qs('#homeName').textContent = t.homeName || '';
+		if (t.awayName !== undefined) qs('#awayName').textContent = t.awayName || '';
+		if (t.homeLogo){ const el = qs('#homeLogo'); el.src = t.homeLogo; el.style.visibility='visible'; }
+		if (t.awayLogo){ const el = qs('#awayLogo'); el.src = t.awayLogo; el.style.visibility='visible'; }
+		if (t.sponsor ){ const el = qs('#sponsorLogo'); el.src = t.sponsor;  el.style.visibility='visible'; }
+	  }
+	  function applyScore(s){
+		if (typeof s.home === 'number') homeScoreEl.textContent = String(s.home);
+		if (typeof s.away === 'number') awayScoreEl.textContent = String(s.away);
+	  }
+	  // Mirror your existing clock format
+	  function applyClock(msg){
+		if (typeof msg.serverNowMs === 'number') skewMs = Date.now() - msg.serverNowMs;
+		// The animation of the numeric clock itself is already handled by your page's RAF loop.
+		// We just store the authoritative data in a shared 'net' object like before.
+		window.net = {
+		  running: !!msg.running,
+		  startEpochMs: msg.startEpochMs || 0,
+		  carryMs: msg.carryMs || 0
+		};
+	  }
+
+	  // Normalize incoming message shape
+	  function getType(msg){
+		return (msg && (msg.type || msg.cmd || msg.action) || '').toLowerCase();
+	  }
+
+	  // Connection with auto-retry
+	  let ws;
+	  function connectWS(){
+		try { ws && ws.close(); } catch(_){}
+		ws = new WebSocket(wsUrl);
+
+		ws.addEventListener('open', () => {
+		  // Hide local controls when connected
+		  const hideControls = (params.get('clean') === '1') || Boolean(wsUrl);
+		  if (hideControls) { const c = qs('#controls'); if (c) c.style.display = 'none'; }
+		  // Identify as a viewer
+		  ws.send(JSON.stringify({ type:'hello', role:'viewer', version:'xml-anim-1.0' }));
+		});
+
+		ws.addEventListener('message', async (evt) => {
+		  let msg = {};
+		  try { msg = JSON.parse(evt.data); } catch(_){ return; }
+		  const t = getType(msg);
+
+		  switch (t){
+			case 'ping': {
+			  ws.send(JSON.stringify({ type:'pong', id: msg.id ?? null, now: Date.now() }));
+			  break;
+			}
+			case 'state': {
+			  if (typeof msg.serverNowMs === 'number') skewMs = Date.now() - msg.serverNowMs;
+			  if (msg.teams) applyTeams(msg.teams);
+			  if (msg.score) applyScore(msg.score);
+			  if (msg.clock) applyClock(msg.clock);
+			  if (msg.xml){
+				// msg.xml can be {url, scene, autoplay}
+				if (msg.xml.url && hasEngine()){
+				  try { await loadXML(msg.xml.url, msg.xml.scene, msg.xml.autoplay); } catch(e){ console.warn(e); }
+				}
+			  }
+			  if (msg.scene && hasEngine()){
+				window.setXMLScene(msg.scene);
+				if (msg.autoplay) window.playXML(msg.autoplay);
+			  }
+			  break;
+			}
+			case 'teams': applyTeams(msg); break;
+			case 'score': applyScore(msg); break;
+			case 'clock': applyClock(msg); break;
+
+			case 'xml': {
+			  if (!hasEngine()) break;
+			  // Accept either url or inline xmlText
+			  if (msg.url){
+				try { await loadXML(msg.url, msg.scene, msg.autoplay); } catch(e){ console.warn(e); }
+			  } else if (msg.xmlText){
+				try {
+				  const dom = new DOMParser().parseFromString(msg.xmlText, 'text/xml');
+				  window._xmlDOM = dom;
+				  const first = dom.querySelector('Scene');
+				  if (first){
+					const name = msg.scene || first.getAttribute('scenename') || '';
+					window.setXMLScene(name);
+					window.playXML('InitialPosition');
+					setTimeout(() => window.playXML(msg.autoplay || 'In'), 10);
+				  }
+				} catch(e){ console.warn(e); }
+			  }
+			  break;
+			}
+
+			case 'scene': {
+			  if (!hasEngine()) break;
+			  window.setXMLScene(msg.name || msg.scene || '');
+			  if (msg.autoplay) window.playXML(msg.autoplay);
+			  break;
+			}
+
+			case 'anim': {
+			  if (!hasEngine()) break;
+			  window.playXML(msg.name || 'In');
+			  break;
+			}
+
+			default: {
+			  // tolerate unknown messages
+			  // console.debug('Unknown message', msg);
+			}
+		  }
+		});
+
+		ws.addEventListener('close', () => setTimeout(connectWS, 800));
+		ws.addEventListener('error',  () => { try{ ws.close(); }catch(_){ } });
+	  }
+
+	  connectWS();
+	})();
+  
 	/* ================= XML Layer Engine with Animations (targets 1024×576) ================
 	   Usage:
 		 - Put Football.xml alongside this file.
