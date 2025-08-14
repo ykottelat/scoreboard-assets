@@ -12,15 +12,16 @@
 
   <style>
     :root{
+      /* Colors */
       --bg:#0b0b0b; --fg:#f5f5f5; --muted:#bdbdbd; --accent:#e53935;
       --digit-shadow:0 0 12px rgba(255,255,255,.15);
 
       /* Reference sizes (1024×576 design) */
-      --clock-w:460px; --clock-h:200px;
-      --logo-w:220px;  --logo-h:272px;
-      --sponsor-w:520px; --sponsor-h:254px;
-      --sponsor-gap: 12px;
-      --score-gap: 12px;
+      --clock-w:460px; --clock-h:200px;      /* clock box size */
+      --logo-w:220px;  --logo-h:272px;       /* logo box size */
+      --sponsor-w:520px; --sponsor-h:254px;  /* sponsor box size */
+      --sponsor-gap: 12px;                   /* vertical gap under the clock */
+      --score-gap: 12px;                     /* gap under logos for scores */
     }
 
     *,*::before,*::after{ box-sizing:border-box; }
@@ -35,18 +36,21 @@
     .board{
       width:min(100dvw, 1024px, calc(100dvh * (16/9)));
       aspect-ratio:16/9; height:auto;
+
       position:relative; overflow:hidden;
       padding:clamp(8px,2vw,24px);
       display:grid; grid-template-rows:auto 1fr auto;
+
       border-radius:24px;
       box-shadow:0 20px 60px rgba(0,0,0,.45) inset, 0 10px 30px rgba(0,0,0,.35);
-      background:rgba(13,71,161,.92);
-      container-type:size;
+      background:rgba(13,71,161,.92); /* blue board */
+
+      container-type:size; /* enable cqw/cqh */
     }
 
     .top{ display:grid; grid-template-columns:1fr auto 1fr; align-items:center; gap:clamp(8px,2vw,24px); }
 
-    /* CLOCK */
+    /* === CLOCK: centered at top, fixed box === */
     .game-clock{
       position:absolute; top:0; left:50%; transform:translateX(-50%);
       width:var(--clock-w); height:var(--clock-h);
@@ -60,32 +64,32 @@
       z-index:10;
     }
 
-    /* LOGOS */
+    /* === LOGOS: centered in left/right spaces beside the centered clock === */
     .logo{
       position:absolute; top:0;
       width:var(--logo-w); height:var(--logo-h);
       object-fit:contain; filter:drop-shadow(0 4px 8px rgba(0,0,0,.5));
     }
-    .logo.home{
-      left: calc( (50% - (var(--clock-w) / 2)) / 2 - (var(--logo-w) / 2) );
-    }
-    .logo.away{
-      left: calc( ((50% + (var(--clock-w) / 2)) + 100%) / 2 - (var(--logo-w) / 2) );
-    }
+    .logo.home{ left: calc( (50% - (var(--clock-w) / 2)) / 2 - (var(--logo-w) / 2) ); }
+    .logo.away{ left: calc( ((50% + (var(--clock-w) / 2)) + 100%) / 2 - (var(--logo-w) / 2) ); }
 
-    /* SPONSOR */
+    /* === SPONSOR: centered directly under the clock, same width as the clock === */
     .sponsor-top{
-      position:absolute; left:50%; transform:translateX(-50%);
+      position:absolute;
+      left:50%; transform:translateX(-50%);
       top: calc( max(var(--logo-h), var(--clock-h)) + var(--sponsor-gap) );
-      width: var(--clock-w); display:grid; place-items:center; z-index:5;
+      width: var(--clock-w);
+      display:grid; place-items:center;
+      z-index:5;
     }
     .sponsor-top img{ width: 100%; height: auto; object-fit: contain; filter: drop-shadow(0 6px 16px rgba(0,0,0,.6)); }
 
-    /* SCORES */
+    /* === SCORES === */
     .score{
       position: absolute;
       top: calc(var(--logo-h) + var(--score-gap));
-      width: var(--logo-w); height: var(--clock-h);
+      width: var(--logo-w);
+      height: var(--clock-h);
       display: grid; place-items: center;
       font-variant-numeric: tabular-nums; font-weight: 800; text-shadow: var(--digit-shadow); line-height: 1;
       font-size: min(calc(var(--clock-h) * 0.8), calc(var(--logo-w) / 2.2));
@@ -94,21 +98,24 @@
     .score.home{ left: calc( (50% - (var(--clock-w) / 2)) / 2 - (var(--logo-w) / 2) ); }
     .score.away{ left: calc( ( (50% + (var(--clock-w) / 2)) + 100% ) / 2 - (var(--logo-w) / 2) ); }
 
-    .labels{
-      position:absolute; left:0; right:0; top:50%; transform:translateY(-50%);
-      pointer-events:none; display:grid; grid-template-columns:1fr 1fr;
-      padding:0 clamp(8px,2vw,24px); font-size:clamp(10px,2.2vw,22px); color:#d3d3d3; opacity:.85;
-    }
-    .labels .home{ justify-self:start; } .labels .away{ justify-self:end; }
-
+    /* Bottom time-of-day */
     .bottom { }
     .tod{
       position: absolute; left: 50%;
       top: calc( ( max(var(--logo-h), var(--clock-h)) + var(--sponsor-gap) + var(--sponsor-h) + 100% ) / 2 );
       transform: translate(-50%, -50%);
       font-variant-numeric: tabular-nums; color: var(--muted);
-      font-size: min(40px, 5vmin); letter-spacing: .12em; text-shadow: 0 0 10px rgba(0,0,0,.6); z-index: 4;
+      font-size: min(40px, 5vmin); letter-spacing: .12em; text-shadow: 0 0 10px rgba(0,0,0,.6);
+      z-index: 4;
     }
+    
+    .labels{
+      position:absolute; left:0; right:0; top:50%; transform:translateY(-50%);
+      pointer-events:none; display:grid; grid-template-columns:1fr 1fr;
+      padding:0 clamp(8px,2vw,24px); font-size:clamp(10px,2.2vw,22px); color:#d3d3d3; opacity:.85;
+    }
+    .labels div{ white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+    .labels .home{ justify-self:start; } .labels .away{ justify-self:end; }
 
     .controls{
       position:absolute; left:50%; transform:translateX(-50%);
@@ -125,7 +132,7 @@
       :root{
         --logo-w-p:21.484375; --logo-h-p:47.222222;
         --sponsor-w-p:50.78125; --sponsor-h-p:44.097222;
-        --clock-w-p:44.921875; --clock-h-p:34.722222;
+        --clock-w-p:44.921875;  --clock-h-p:34.722222;
         --sponsor-gap-p: 2; --score-gap-p: 2;
       }
       .tod{
@@ -138,30 +145,30 @@
         font-size: min( calc((var(--clock-w-p) * 1cqw) / 3.3), calc(var(--clock-h-p) * 1cqh * 0.8) );
       }
       .logo{ width: calc(var(--logo-w-p) * 1cqw); height: calc(var(--logo-h-p) * 1cqh); }
-      .logo.home{ left: calc( (50% - ((var(--clock-w-p) * 1cqw)/2)) / 2 - ((var(--logo-w-p) * 1cqw)/2) ); }
-      .logo.away{ left: calc( ((50% + ((var(--clock-w-p) * 1cqw)/2)) + 100%) / 2 - ((var(--logo-w-p) * 1cqw)/2) ); }
+      .logo.home{ left: calc( (50% - ( (var(--clock-w-p) * 1cqw) / 2 )) / 2 - ( (var(--logo-w-p) * 1cqw) / 2 ) ); }
+      .logo.away{ left: calc( ( (50% + ( (var(--clock-w-p) * 1cqw) / 2 )) + 100% ) / 2 - ( (var(--logo-w-p) * 1cqw) / 2 ) ); }
       .sponsor-top{ top: calc( (var(--clock-h-p) * 1cqh) + (var(--sponsor-gap-p) * 1cqh) ); width: calc(var(--clock-w-p) * 1cqw); }
-      .sponsor-top img{ width:100%; height:auto; }
+      .sponsor-top img{ width: 100%; height: auto; }
       .score{
         top: calc( (var(--logo-h-p) * 1cqh) + (var(--score-gap-p) * 1cqh) );
         width: calc(var(--logo-w-p) * 1cqw); height: calc(var(--clock-h-p) * 1cqh);
         font-size: min( calc((var(--clock-h-p) * 1cqh) * 0.8), calc((var(--logo-w-p) * 1cqw) / 1.2) );
       }
-      .score.home{ left: calc( (50% - ((var(--clock-w-p) * 1cqw)/2)) / 2 - ((var(--logo-w-p) * 1cqw)/2) ); }
-      .score.away{ left: calc( ((50% + ((var(--clock-w-p) * 1cqw)/2)) + 100%) / 2 - ((var(--logo-w-p) * 1cqw)/2) ); }
+      .score.home{ left: calc( (50% - ( (var(--clock-w-p) * 1cqw) / 2 )) / 2 - ( (var(--logo-w-p) * 1cqw) / 2 ) ); }
+      .score.away{ left: calc( ( (50% + ( (var(--clock-w-p) * 1cqw) / 2 )) + 100% ) / 2 - ( (var(--logo-w-p) * 1cqw) / 2 ) ); }
 
-      /* XML overlay container (optional; only used if ?xml=...) */
+      /* === XML LAYERS === */
       .xml-layers{ position:absolute; inset:0; pointer-events:none; z-index:12; container-type:size; }
       .xml-layers .item{ position:absolute; overflow:hidden; }
       .xml-layers .text{ display:flex; line-height:1; padding:0 .25rem; word-break:break-word; }
-      .xml-layers .align-left{ justify-content:flex-start; text-align:left; }
-      .xml-layers .align-center{ justify-content:center; text-align:center; }
-      .xml-layers .align-right{ justify-content:flex-end; text-align:right; }
-      .xml-layers .valign-top{ align-items:flex-start; }
-      .xml-layers .valign-middle{ align-items:center; }
-      .xml-layers .valign-bottom{ align-items:flex-end; }
+      .xml-layers .align-left   { justify-content:flex-start; text-align:left; }
+      .xml-layers .align-center { justify-content:center;     text-align:center; }
+      .xml-layers .align-right  { justify-content:flex-end;   text-align:right; }
+      .xml-layers .valign-top    { align-items:flex-start; }
+      .xml-layers .valign-middle { align-items:center; }
+      .xml-layers .valign-bottom { align-items:flex-end; }
 
-      /* FIXED selector: hide built-ins when XML mode active */
+      /* FIXED: hide built-ins in XML mode */
       body.xmlMode .top,
       body.xmlMode .sponsor-top,
       body.xmlMode .middle,
@@ -177,9 +184,11 @@
       <img id="homeLogo" class="logo home" alt="Home logo" />
       <div class="game-clock" id="gameClock">00:00</div>
       <img id="awayLogo" class="logo away" alt="Away logo" />
+      <!-- XML-driven overlay -->
       <div id="xmlLayers" class="xml-layers" aria-label="XML Layers"></div>
     </div>
 
+    <!-- Sponsor centered directly under the clock -->
     <div class="sponsor-top"><img id="sponsorLogo" alt="Sponsor logo" /></div>
 
     <div class="middle">
@@ -209,26 +218,288 @@
     </div>
   </div>
 
+  <!-- ===== Shared globals used by both the XML engine and the clock loop ===== -->
   <script>
-    // ---- shared globals used by the clock + WS bridge
-    window.net = null;     // { running, startEpochMs, carryMs }
-    window.skewMs = 0;     // client_now - server_now
+    window.net = null;   // authoritative clock data from server: { running, startEpochMs, carryMs }
+    window.skewMs = 0;   // client_now - server_now (used for clock + TOD)
   </script>
 
+  <!-- ================= XML Layer Engine (unchanged in behavior) ================= -->
   <script>
-    // ===== util + DOM refs
-    const qs   = (s) => document.querySelector(s);
+  (function(){
+    const params = new URLSearchParams(location.search);
+    const xmlUrl = params.get('xml');
+    const initialScene = params.get('scene') || null;
+    const autoPlayName = (params.get('autoplay') || 'In');
+
+    if (!xmlUrl) return;
+    document.body.classList.add('xmlMode');
+
+    const LAYERS = document.getElementById('xmlLayers');
+    const TARGET_W = 1024, TARGET_H = 576;
+
+    const parseColor = (s) => { if (!s) return null; const [r,g,b,a] = s.split(';').map(n => +n || 0); return `rgba(${r},${g},${b},${(a??255)/255})`; };
+    const parseFont  = (s) => { if (!s) return { family:`'Droid Sans Mono', monospace`, sizePx:24 }; const [family, sz] = s.split(';'); return { family: family || `'Droid Sans Mono', monospace`, sizePx: +(sz||24) }; };
+    const alignClasses = (a='') => {
+      const al = a.toLowerCase();
+      const h = al.includes('left') ? 'align-left' : al.includes('right') ? 'align-right' : 'align-center';
+      const v = al.includes('top') ? 'valign-top' : al.includes('bottom') ? 'valign-bottom' : 'valign-middle';
+      return `${h} ${v}`;
+    };
+    const toPct = (px, dim) => (px / dim) * 100;
+
+    let sceneRegistry = null;
+
+    function buildKeyframes(xList, yList, tList, sx, sy){
+      const n = Math.min(xList.length, yList.length, tList.length);
+      if (n === 0) return { frames: [], duration: 0 };
+      const total = tList[n-1] || 0.0001;
+      const frames = [];
+      for (let i = 0; i < n; i++){
+        const leftPx = xList[i] * sx;
+        const topPx  = (-yList[i]) * sy;
+        frames.push({ left: toPct(leftPx, TARGET_W)+'%', top: toPct(topPx, TARGET_H)+'%', offset: total ? (tList[i]/total) : (i===n-1?1:0) });
+      }
+      frames[frames.length-1].offset = 1;
+      return { frames, duration: total * 1000 };
+    }
+    const parseNumList = (s) => !s ? [] : s.split(';').map(v => +v);
+
+    function renderScene(sceneEl){
+      if (sceneRegistry && sceneRegistry.activeAnims){ for (const a of sceneRegistry.activeAnims.values()){ try{ a.cancel(); }catch(e){} } }
+      sceneRegistry = { elements:new Set(), tracks:new Map(), activeAnims:new Map() };
+      LAYERS.innerHTML = '';
+
+      let baseW = 512, baseH = 288;
+      const panel = sceneEl.querySelector('Item[prefab="Panel"]');
+      if (panel){ baseW = +(panel.getAttribute('width')||baseW); baseH = +(panel.getAttribute('height')||baseH); }
+      const sx = TARGET_W / baseW, sy = TARGET_H / baseH;
+
+      for (const it of sceneEl.querySelectorAll('Item')){
+        const prefab = it.getAttribute('prefab') || 'Unknown';
+        if (prefab === 'AnimationPrefab') continue;
+
+        const name = it.getAttribute('name') || prefab;
+        const x = +(it.getAttribute('x')||0), y = +(it.getAttribute('y')||0);
+        const w = +(it.getAttribute('width')||0), h = +(it.getAttribute('height')||0);
+
+        const leftPx = x * sx, topPx = (-y) * sy, widthPx = w * sx, heightPx = h * sy;
+
+        const el = document.createElement(prefab === 'Text' ? 'div' : (prefab === 'Image' ? 'img' : 'div'));
+        el.className = 'item';
+        el.style.left = toPct(leftPx, TARGET_W)+'%';
+        el.style.top = toPct(topPx, TARGET_H)+'%';
+        el.style.width = toPct(widthPx, TARGET_W)+'%';
+        el.style.height = toPct(heightPx, TARGET_H)+'%';
+        el.dataset.itemName = name;
+
+        if (prefab === 'Panel'){
+          const bg = parseColor(it.getAttribute('imagecolor')); if (bg) el.style.background = bg; el.style.pointerEvents = 'none';
+        } else if (prefab === 'Image'){
+          const src = it.getAttribute('defaultimage') || '';
+          el.decoding = 'async'; el.loading = 'eager';
+          if (src) el.src = src;
+          el.style.objectFit = 'contain'; el.style.filter = 'drop-shadow(0 4px 8px rgba(0,0,0,.35))';
+          el.alt = name;
+        } else if (prefab === 'Text'){
+          el.classList.add('text');
+          el.style.color = parseColor(it.getAttribute('textcolor')) || 'rgba(255,255,255,.95)';
+          el.style.fontFamily = (parseFont(it.getAttribute('font')).family) + ', monospace';
+          el.style.fontWeight = 700;
+          el.classList.add(...alignClasses(it.getAttribute('textalignment')).split(' '));
+          el.textContent = it.getAttribute('defaulttext') || '';
+          const baseHpx = h * (TARGET_H / baseH);
+          const minPx = (+(it.getAttribute('minfontsize') || 8))  * (TARGET_H / baseH);
+          const maxPx = (+(it.getAttribute('maxfontsize') || 200)) * (TARGET_H / baseH);
+          el.style.setProperty('--box-h-pct', (baseHpx / TARGET_H) * 100);
+          el.style.fontSize = `clamp(${minPx}px, calc(var(--box-h-pct) * 1cqh * 0.70), ${maxPx}px)`;
+          el.style.textShadow = '0 0 12px rgba(0,0,0,.35)';
+        } else {
+          el.style.outline = '1px dashed rgba(255,255,255,.25)';
+          el.style.color = 'rgba(255,255,255,.7)';
+          el.style.display = 'flex'; el.style.alignItems = 'center'; el.style.justifyContent = 'center';
+          el.textContent = name || prefab;
+        }
+
+        LAYERS.appendChild(el);
+        sceneRegistry.elements.add(el);
+
+        const animNodes = [...it.querySelectorAll(':scope > Animation')];
+        if (animNodes.length){
+          const trackMap = new Map();
+          for (const an of animNodes){
+            const nm = (an.getAttribute('name')||'Custom').toLowerCase();
+            const { frames, duration } = buildKeyframes(parseNumList(an.getAttribute('x')), parseNumList(an.getAttribute('y')), parseNumList(an.getAttribute('duration')), sx, sy);
+            let easing = 'ease-in-out';
+            if (nm === 'in')  easing = 'cubic-bezier(.2,.8,.2,1)';
+            if (nm === 'out') easing = 'cubic-bezier(.4,0,.6,1)';
+            trackMap.set(nm, { frames, duration, easing });
+          }
+          sceneRegistry.tracks.set(el, trackMap);
+
+          const init = trackMap.get('initialposition');
+          if (init && init.frames.length){
+            const last = init.frames[init.frames.length-1];
+            if (last.left) el.style.left = last.left;
+            if (last.top)  el.style.top  = last.top;
+          }
+        }
+      }
+    }
+
+    function play(animName){
+      if (!sceneRegistry) return;
+      const key = (animName||'in').toLowerCase();
+      for (const [el, running] of sceneRegistry.activeAnims || []){ try{ running.cancel(); }catch(e){} }
+      sceneRegistry.activeAnims = new Map();
+      for (const [el, trackMap] of sceneRegistry.tracks){
+        const def = trackMap.get(key);
+        if (!def || !def.frames.length || def.duration <= 0) continue;
+        const anim = el.animate(def.frames, { duration: def.duration, fill:'forwards', easing:def.easing });
+        sceneRegistry.activeAnims.set(el, anim);
+      }
+    }
+
+    window.playXML = play;
+    window.setXMLScene = (name) => {
+      if (!window._xmlDOM) return;
+      const next = window._xmlDOM.querySelector(`Scene[scenename="${CSS.escape(name)}"]`);
+      if (next){
+        renderScene(next);
+        play('InitialPosition');
+        setTimeout(() => play(autoPlayName), 10);
+      }
+    };
+
+    async function loadAndRender(){
+      try{
+        const res = await fetch(xmlUrl, { cache:'no-store' });
+        const xmlText = await res.text();
+        const dom = new DOMParser().parseFromString(xmlText, 'text/xml');
+        window._xmlDOM = dom;
+
+        let sceneEl = null;
+        if (initialScene) sceneEl = dom.querySelector(`Scene[scenename="${CSS.escape(initialScene)}"]`);
+        if (!sceneEl) sceneEl = dom.querySelector('Scene');
+        if (!sceneEl) return;
+
+        renderScene(sceneEl);
+        play('InitialPosition');
+        setTimeout(() => play(autoPlayName), 10);
+      } catch(e){ console.error('[overlay] XML load failed', e); }
+    }
+    loadAndRender();
+  })();
+  </script>
+
+  <!-- =================== WebSocket bridge (single source of truth) =================== -->
+  <script>
+  (function(){
+    const qs = (s) => document.querySelector(s);
+    const params = new URLSearchParams(location.search);
+
+    const hasEngine = () => typeof window.setXMLScene === 'function' && typeof window.playXML === 'function';
+
+    async function loadXML(url, scene, autoplay){
+      try{
+        const res = await fetch(url, {cache:'no-store'});
+        const xmlText = await res.text();
+        const dom = new DOMParser().parseFromString(xmlText, 'text/xml');
+        window._xmlDOM = dom;
+        const first = dom.querySelector('Scene');
+        if (!first) return;
+        const target = scene
+          ? dom.querySelector(`Scene[scenename="${CSS.escape(scene)}"]`) || first
+          : first;
+        window.setXMLScene(target.getAttribute('scenename') || target.getAttribute('name') || '');
+        window.playXML('InitialPosition');
+        setTimeout(() => window.playXML(autoplay || 'In'), 10);
+      }catch(e){ console.warn('[overlay] loadXML failed', e); }
+    }
+
+    // Default WS URL is same host /ws unless ?ws= is supplied (use this on GitHub Pages)
+    const defaultWS = (location.protocol === 'https:' ? 'wss://' : 'ws://') + location.host + '/ws';
+    const wsUrl = params.get('ws') || defaultWS;
+    console.log('[overlay] WS URL →', wsUrl);
+
+    // Apply helpers
+    function applyTeams(t){
+      if (t.homeName !== undefined) qs('#homeName').textContent = t.homeName || '';
+      if (t.awayName !== undefined) qs('#awayName').textContent = t.awayName || '';
+      if (t.homeLogo){ const el = qs('#homeLogo'); el.src = t.homeLogo; el.style.visibility='visible'; }
+      if (t.awayLogo){ const el = qs('#awayLogo'); el.src = t.awayLogo; el.style.visibility='visible'; }
+      if (t.sponsor ){ const el = qs('#sponsorLogo'); el.src = t.sponsor;  el.style.visibility='visible'; }
+    }
+    function applyScore(s){
+      if (typeof s.home === 'number') qs('#homeScore').textContent = String(s.home);
+      if (typeof s.away === 'number') qs('#awayScore').textContent = String(s.away);
+    }
+    function applyClock(msg){
+      if (typeof msg.serverNowMs === 'number') window.skewMs = Date.now() - msg.serverNowMs;  // <- used by clock + TOD
+      window.net = {
+        running: !!msg.running,
+        startEpochMs: msg.startEpochMs || 0,
+        carryMs: msg.carryMs || 0
+      };
+    }
+    const getType = (m) => (m && (m.type || m.cmd || m.action) || '').toLowerCase();
+
+    let ws;
+    function connectWS(){
+      try { ws && ws.close(); } catch(_){}
+      ws = new WebSocket(wsUrl);
+
+      ws.addEventListener('open', () => {
+        console.log('[overlay] WS open');
+        const hideControls = (params.get('clean') === '1') || Boolean(wsUrl);
+        if (hideControls) { const c = qs('#controls'); if (c) c.style.display = 'none'; }
+        ws.send(JSON.stringify({ type:'hello', role:'viewer', version:'xml-anim-1.0' }));
+      });
+
+      ws.addEventListener('message', async (evt) => {
+        let msg={}; try { msg = JSON.parse(evt.data); } catch(_){ return; }
+        const t = getType(msg);
+        switch(t){
+          case 'ping':  ws.send(JSON.stringify({ type:'pong', id: msg.id ?? null, now: Date.now() })); break;
+          case 'state':
+            if (typeof msg.serverNowMs === 'number') window.skewMs = Date.now() - msg.serverNowMs;
+            if (msg.teams) applyTeams(msg.teams);
+            if (msg.score) applyScore(msg.score);
+            if (msg.clock) applyClock(msg.clock);
+            if (msg.xml && msg.xml.url && hasEngine()) await loadXML(msg.xml.url, msg.xml.scene, msg.xml.autoplay);
+            if (msg.scene && hasEngine()){ window.setXMLScene(msg.scene); if (msg.autoplay) window.playXML(msg.autoplay); }
+            break;
+          case 'teams': applyTeams(msg); break;
+          case 'score': applyScore(msg); break;
+          case 'clock': applyClock(msg); break;
+          case 'xml':   if (hasEngine()) await loadXML(msg.url, msg.scene, msg.autoplay); break;
+          case 'scene': if (hasEngine()){ window.setXMLScene(msg.name || msg.scene || ''); if (msg.autoplay) window.playXML(msg.autoplay); } break;
+          case 'anim':  if (hasEngine()) window.playXML(msg.name || 'In'); break;
+          default: /* ignore */ break;
+        }
+      });
+
+      ws.addEventListener('close', () => { console.warn('[overlay] WS closed; retrying…'); setTimeout(connectWS, 800); });
+      ws.addEventListener('error', (e) => { console.error('[overlay] WS error', e); try{ ws.close(); }catch(_){} });
+    }
+
+    connectWS();
+  })();
+  </script>
+
+  <!-- =================== Clock + TOD render loop (uses window.net/skewMs) =================== -->
+  <script>
+    const qs = (s) => document.querySelector(s);
     const pad2 = (n) => String(n).padStart(2, '0');
 
     const gameClockEl = qs('#gameClock');
-    const todEl       = qs('#timeOfDay');
+    const todEl = qs('#timeOfDay');
     const homeScoreEl = qs('#homeScore');
     const awayScoreEl = qs('#awayScore');
 
-    // ===== local fallback clock (only when no server)
+    // Local-only fallback when not connected
     let local = { running:false, startTime:0, carry:0 };
 
-    // clock renderer (uses server state when available)
     const computeDisplayFromClock = (clock) => {
       const nowMs = Date.now() - (window.net ? window.skewMs : 0);
       const elapsed = (clock.running ? (nowMs - clock.startEpochMs) : 0) + (clock.carryMs || 0);
@@ -238,9 +509,7 @@
 
     const tickGameClock = () => {
       if (window.net) {
-        gameClockEl.textContent = computeDisplayFromClock({
-          running: window.net.running, startEpochMs: window.net.startEpochMs, carryMs: window.net.carryMs
-        });
+        gameClockEl.textContent = computeDisplayFromClock(window.net);
       } else {
         const now = Date.now();
         const elapsed = (local.running ? (now - local.startTime) : 0) + local.carry;
@@ -251,17 +520,17 @@
     };
     requestAnimationFrame(tickGameClock);
 
-    // time-of-day
+    // Time of day (server-based when connected)
     const tickTOD = () => {
-      const now = new Date();
+      const now = new Date(Date.now() - (window.skewMs || 0));
       todEl.textContent = `${pad2(now.getHours())}:${pad2(now.getMinutes())}:${pad2(now.getSeconds())}`;
     };
     tickTOD(); setInterval(tickTOD, 1000);
 
-    // simple local score buttons (disabled when WS active)
+    // Local-only score bumpers (disabled when WS is active)
     const bump = (el, d) => { if (window.net) return; const v = Math.max(0, (parseInt(el.textContent,10)||0) + d); el.textContent = v; };
 
-    // controls
+    // Buttons
     qs('#playPause').addEventListener('click', () => (local.running ? pauseClock() : startClock()));
     qs('#reset').addEventListener('click', resetClock);
     qs('#homePlus').addEventListener('click', () => bump(homeScoreEl, +1));
@@ -278,19 +547,21 @@
     function pauseClock(){ if (window.net || !local.running) return; local.running = false; local.carry += Date.now() - local.startTime; qs('#playPause').textContent='▶︎ Start'; }
     function resetClock(){ if (window.net) return; local = { running:false, startTime:0, carry:0 }; gameClockEl.textContent='00:00'; qs('#playPause').textContent='▶︎ Start'; }
 
-    // ===== query params: names/logos/sponsor/theme/clean
+    /* ---- Optional query-string overrides (placeholders/theme/clean) ---- */
     const params = new URLSearchParams(location.search);
-    const setImg  = (sel, url) => { const el = qs(sel); if (url) { el.src = url; el.style.visibility = 'visible'; } else { el.style.visibility = 'hidden'; } };
-    const setText = (sel, val) => { if (val != null) qs(sel).textContent = val; };
+    const setImg = (id, url) => { const el = qs(id); if (url) { el.src = url; el.style.visibility = 'visible'; } else { el.style.visibility = 'hidden'; } };
+    const setText = (id, val) => { if (val != null) qs(id).textContent = val; };
 
     setText('#homeName', params.get('homeName') || '');
     setText('#awayName', params.get('awayName') || '');
     setImg('#homeLogo', params.get('homeLogo'));
     setImg('#awayLogo', params.get('awayLogo'));
     setImg('#sponsorLogo', params.get('sponsor'));
+
     if (params.has('home')) homeScoreEl.textContent = String(parseInt(params.get('home'),10) || 0);
     if (params.has('away')) awayScoreEl.textContent = String(parseInt(params.get('away'),10) || 0);
     if (params.get('clean') === '1') document.body.classList.add('clean');
+
     if ((params.get('theme')||'').toLowerCase()==='light'){
       document.documentElement.style.setProperty('--bg','#f7f7f9');
       document.documentElement.style.setProperty('--fg','#0b0b0b');
@@ -298,112 +569,28 @@
       document.documentElement.style.setProperty('--digit-shadow','0 0 12px rgba(0,0,0,.12)');
     }
 
-    // default placeholders
+    // Default placeholders (kept)
     if (!qs('#homeLogo').src){
       const el = qs('#homeLogo');
       el.src = 'data:image/svg+xml;utf8,' + encodeURIComponent(
-        `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 220 272">
-           <rect width="100%" height="100%" rx="24" fill="#1976d2"/>
-           <text x="50%" y="55%" text-anchor="middle" fill="#fff" font-size="140" font-family="Arial, Helvetica, sans-serif">H</text>
-         </svg>`
-      ); el.style.visibility = 'visible';
+        `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 220 272"><rect width="100%" height="100%" rx="24" fill="#1976d2"/><text x="50%" y="55%" text-anchor="middle" fill="#fff" font-size="140" font-family="Arial, Helvetica, sans-serif">H</text></svg>`
+      );
+      el.style.visibility = 'visible';
     }
     if (!qs('#awayLogo').src){
       const el = qs('#awayLogo');
       el.src = 'data:image/svg+xml;utf8,' + encodeURIComponent(
-        `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 220 272">
-           <rect width="100%" height="100%" rx="24" fill="#c62828"/>
-           <text x="50%" y="55%" text-anchor="middle" fill="#fff" font-size="140" font-family="Arial, Helvetica, sans-serif">A</text>
-         </svg>`
-      ); el.style.visibility = 'visible';
+        `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 220 272"><rect width="100%" height="100%" rx="24" fill="#c62828"/><text x="50%" y="55%" text-anchor="middle" fill="#fff" font-size="140" font-family="Arial, Helvetica, sans-serif">A</text></svg>`
+      );
+      el.style.visibility = 'visible';
     }
     if (!qs('#sponsorLogo').src){
       const el = qs('#sponsorLogo');
       el.src = 'data:image/svg+xml;utf8,' + encodeURIComponent(
-        `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 520 254">
-           <rect width="100%" height="100%" fill="none"/>
-           <text x="50%" y="55%" text-anchor="middle" fill="#e0e0e0" font-size="64" font-family="Arial, Helvetica, sans-serif">YOUR SPONSOR</text>
-         </svg>`
-      ); el.style.visibility = 'visible';
+        `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 520 254"><rect width="100%" height="100%" fill="none"/><text x="50%" y="55%" text-anchor="middle" fill="#e0e0e0" font-size="64" font-family="Arial, Helvetica, sans-serif">YOUR SPONSOR</text></svg>`
+      );
+      el.style.visibility = 'visible';
     }
-  </script>
-
-  <script>
-    /* ================= WebSocket bridge (single source of truth) ================= */
-    (function(){
-      const params = new URLSearchParams(location.search);
-
-      // default: same host /ws; override via ?ws= for GitHub Pages
-      const defaultWS = (location.protocol === 'https:' ? 'wss://' : 'ws://') + location.host + '/ws';
-      const wsUrl = params.get('ws') || defaultWS;
-      console.log('[overlay] WS →', wsUrl);
-
-      // helpers to apply server state
-      function applyTeams(t){
-        if (t.homeName !== undefined) document.getElementById('homeName').textContent = t.homeName || '';
-        if (t.awayName !== undefined) document.getElementById('awayName').textContent = t.awayName || '';
-        if (t.homeLogo){ const el = document.getElementById('homeLogo'); el.src = t.homeLogo; el.style.visibility='visible'; }
-        if (t.awayLogo){ const el = document.getElementById('awayLogo'); el.src = t.awayLogo; el.style.visibility='visible'; }
-        if (t.sponsor ){ const el = document.getElementById('sponsorLogo'); el.src = t.sponsor;  el.style.visibility='visible'; }
-      }
-      function applyScore(s){
-        if (typeof s.home === 'number') document.getElementById('homeScore').textContent = String(s.home);
-        if (typeof s.away === 'number') document.getElementById('awayScore').textContent = String(s.away);
-      }
-      function applyClock(clock){
-        // `serverNowMs` comes on the state envelope; we compute skew there.
-        window.net = {
-          running: !!clock.running,
-          startEpochMs: clock.startEpochMs || 0,
-          carryMs: clock.carryMs || 0
-        };
-      }
-
-      let ws;
-      function connectWS(){
-        try { ws && ws.close(); } catch(_){}
-        ws = new WebSocket(wsUrl);
-
-        ws.addEventListener('open', () => {
-          console.log('[overlay] WS open');
-          // hide local controls when connected
-          const c = document.getElementById('controls');
-          if (c) c.style.display = 'none';
-          ws.send(JSON.stringify({ type:'hello', role:'viewer' }));
-        });
-
-        ws.addEventListener('message', (evt) => {
-          let msg; try { msg = JSON.parse(evt.data); } catch { return; }
-          if (!msg || typeof msg !== 'object') return;
-
-          // normalize lowercase type
-          const t = (msg.type || '').toLowerCase();
-
-          if (t === 'state'){
-            if (typeof msg.serverNowMs === 'number') window.skewMs = Date.now() - msg.serverNowMs;
-            if (msg.teams) applyTeams(msg.teams);
-            if (msg.score) applyScore(msg.score);
-            if (msg.clock) applyClock(msg.clock);
-          }
-          else if (t === 'teams'){ applyTeams(msg); }
-          else if (t === 'score'){ applyScore(msg); }
-          else if (t === 'clock'){
-            if (typeof msg.serverNowMs === 'number') window.skewMs = Date.now() - msg.serverNowMs;
-            applyClock(msg);
-          }
-        });
-
-        ws.addEventListener('close', () => {
-          console.warn('[overlay] WS closed; retrying…');
-          // show controls again so you can demo locally during reconnect
-          const c = document.getElementById('controls'); if (c) c.style.display = '';
-          setTimeout(connectWS, 800);
-        });
-        ws.addEventListener('error', () => { try{ ws.close(); }catch(_){ } });
-      }
-
-      connectWS();
-    })();
   </script>
 </body>
 </html>
