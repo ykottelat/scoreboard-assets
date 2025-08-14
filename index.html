@@ -172,6 +172,23 @@
     .xml-layers .valign-middle { align-items:center; }
     .xml-layers .valign-bottom { align-items:flex-end; }
 
+    const DIAG = __params.has('diag');
+
+    function tint(el, prefab){
+      if (!DIAG) return;
+      // light tints to visualize boxes
+      const t = { panel:'rgba(255,255,255,.03)', image:'rgba(0,0,0,.05)', text:'rgba(255,255,0,.08)' }[prefab] || 'transparent';
+      if (el.style.background === '') el.style.background = t;
+      el.style.outline = '1px dashed rgba(255,255,255,.3)';
+    }
+    
+    function label(el, name){
+      if (!DIAG) return;
+      const tag = document.createElement('div');
+      tag.textContent = name;
+      tag.style.cssText = 'position:absolute;left:0;top:0;font:10px/1.2 monospace;background:rgba(0,0,0,.6);color:#fff;padding:2px 4px;border-bottom-right-radius:6px;pointer-events:none;';
+      el.appendChild(tag);
+    }
     /* Hide built-in widgets when XML mode is active */
     body.xmlMode .top,
     body.xmlMode .sponsor-top,
@@ -451,9 +468,32 @@
           el.style.width  = toPct(widthPx, TARGET_W) + '%';
           el.style.height = toPct(heightPx, TARGET_H) + '%';
           el.dataset.itemName = name;
-    
+
+          // decide stacking (can also read a 'z'/'order' attribute if present)
+          let z = 1;
+          if (prefab === 'panel') z = 0;
+          else if (prefab === 'image') z = 1;
+          else if (prefab === 'text') z = 2;
+          
+          // honor explicit z/order if present
+          const zAttr = +(a.z ?? a.order ?? a.layer ?? '');
+          if (!Number.isNaN(zAttr)) z = zAttr;
+          
+          tint(el, prefab);     // <-- call here
+          label(el, name);      // <-- and here
+          el.style.zIndex = String(z);
+          
           if (prefab === 'panel'){
-            const bg = parseColor(getStr(a, 'imagecolor','color','bg'));
+            let bg = parseColor(getStr(a, 'imagecolor','color','bg'));
+            // If the color is fully opaque, make it semi-transparent during debug
+            if (bg && __params.has('diag')) {
+              // turn rgba(r,g,b,a) into rgba(r,g,b, a*0.3)
+              const m = bg.match(/^rgba?\((\d+),\s*(\d+),\s*(\d+)(?:,\s*([0-9.]+))?\)/i);
+              if (m) {
+                const alpha = (m[4] !== undefined ? parseFloat(m[4]) : 1) * 0.3;
+                bg = `rgba(${m[1]},${m[2]},${m[3]},${alpha})`;
+              }
+            }
             if (bg) el.style.background = bg;
             el.style.pointerEvents = 'none';
           }
@@ -478,12 +518,11 @@
             el.style.fontWeight = 700;
             el.classList.add(...alignClasses(align).split(' '));
             el.textContent = getStr(a, 'defaulttext','text','value','content') || '';
-    
+          
             const minPx = (getNum(a, 'minfontsize','minfont','minsize') || 8)  * (TARGET_H / (baseH || TARGET_H));
             const maxPx = (getNum(a, 'maxfontsize','maxfont','maxsize') || 200) * (TARGET_H / (baseH || TARGET_H));
-            const hPct  = toPct(heightPx || 0, TARGET_H);
-            el.style.setProperty('--box-h-pct', hPct || 0.1);
-            el.style.fontSize = `clamp(${minPx}px, calc(var(--box-h-pct) * 1cqh * 0.70), ${maxPx}px)`;
+            const px = Math.max(minPx, Math.min(Math.round((heightPx || 0) * 0.70), maxPx));
+            el.style.fontSize = px + 'px';       // ← simple, robust
             el.style.textShadow = '0 0 12px rgba(0,0,0,.35)';
           }
     
@@ -525,6 +564,17 @@
         } else {
           console.info('[XML] Rendered items:', builtCount);
         }
+
+        if (__params.has('diag')) {
+        const rect = LAYERS.getBoundingClientRect();
+        const children = [...LAYERS.children];
+        const allOff = children.length > 0 && children.every(ch => {
+          const r = ch.getBoundingClientRect();
+          return r.right < rect.left || r.left > rect.right || r.bottom < rect.top || r.top > rect.bottom;
+        });
+        if (allOff) console.warn('[XML][diag] All items appear off-screen (coords/scale issue).');
+      }
+        
         return builtCount;
       }
     
