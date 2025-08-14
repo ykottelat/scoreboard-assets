@@ -403,7 +403,7 @@
           const h = +(it.getAttribute('height') || 0);
 
           const leftPx = x * sx;
-          const topPx  = (-y) * sy;
+          let topPx = y * sy; // assume y increases downward
           const widthPx  = w * sx;
           const heightPx = h * sy;
 
@@ -479,6 +479,30 @@
             }
           }
         }
+      const built = [];
+      
+        function place(el, x, y, w, h, sx, sy, yNeg){
+          const leftPx = x * sx;
+          const topPx  = (yNeg ? -y : y) * sy;
+          el.style.left   = (leftPx / TARGET_W * 100) + '%';
+          el.style.top    = (topPx  / TARGET_H * 100) + '%';
+          el.style.width  = (w * sx / TARGET_W * 100) + '%';
+          el.style.height = (h * sy / TARGET_H * 100) + '%';
+          built.push({ el, leftPx, topPx, w:w*sx, h:h*sy });
+          // 1st pass: yNeg = false
+          // ...create elements and call place(..., yNeg=false)
+        
+          // If every item is off-screen, flip and re-place:
+          const off = built.every(b =>
+            b.topPx + b.h < 0 || b.topPx > TARGET_H || b.leftPx + b.w < 0 || b.leftPx > TARGET_W
+          );
+          if (off){
+            console.warn('[XML] items off-screen, flipping Y');
+            for (const it of [...LAYERS.children]) it.remove();
+            built.length = 0;
+            // re-create again but with yNeg = true
+            // (call place with yNeg=true for each item)
+        }
       }
 
       function play(animName){
@@ -530,35 +554,63 @@
         window._xmlDOM = dom;
 
         let sceneEl = null;
-        if (initialScene){
-          sceneEl = dom.querySelector(`Scene[scenename="${CSS.escape(initialScene)}"]`);
-        }
-        if (!sceneEl) sceneEl = dom.querySelector('Scene');
-        if (!sceneEl){
-          console.warn('No <Scene> found in XML.');
-          return;
-        }
-
-        renderScene(sceneEl);
-        play('InitialPosition');
-        setTimeout(() => play(autoPlayName), 10);
-      }
-
+      // when choosing the initial scene
+      let sceneEl = initialScene
+        ? dom.querySelector(`Scene[scenename="${CSS.escape(initialScene)}"], Scene[name="${CSS.escape(initialScene)}"]`)
+        : null;
+      if (!sceneEl) sceneEl = dom.querySelector('Scene');
+      
+      // when switching scenes later
+      window.setXMLScene = (name) => {
+        if (!window._xmlDOM) return;
+        const next = window._xmlDOM.querySelector(
+          `Scene[scenename="${CSS.escape(name)}"], Scene[name="${CSS.escape(name)}"]`
+        ) || window._xmlDOM.querySelector('Scene');
+        if (!next) return;
+        renderScene(next);
+        play('InitialPosition'); setTimeout(() => play('In'), 10);
+      };
       // also expose loader for WS-triggered XML changes
       window.loadXML = async (url, scene, autoplay) => {
-        const res = await fetch(url, {cache:'no-store'});
+        console.log('[WS][xml] loading', url);
+        let res;
+        try {
+          res = await fetch(url, { cache:'no-store' });
+        } catch (e) {
+          console.error('[WS][xml] fetch failed:', e);
+          return; // don't enter xmlMode
+        }
+        if (!res.ok) {
+          console.error('[WS][xml] HTTP', res.status, res.statusText);
+          return; // don't enter xmlMode
+        }
+      
         const xmlText = await res.text();
         const dom = new DOMParser().parseFromString(xmlText, 'text/xml');
+        const parseErr = dom.querySelector('parsererror');
+        if (parseErr) {
+          console.error('[WS][xml] parse error:', parseErr.textContent?.trim());
+          return; // don't enter xmlMode
+        }
         window._xmlDOM = dom;
-        const target = scene
-          ? dom.querySelector(`Scene[scenename="${CSS.escape(scene)}"]`) || dom.querySelector('Scene')
-          : dom.querySelector('Scene');
-        if (!target) return;
-        renderScene(target);
-        play('InitialPosition');
+      
+        // accept both Scene@scenename and Scene@name
+        const sel = scene
+          ? `Scene[scenename="${CSS.escape(scene)}"], Scene[name="${CSS.escape(scene)}"]`
+          : 'Scene';
+        const target = dom.querySelector(sel) || dom.querySelector('Scene');
+        if (!target) {
+          console.warn('[WS][xml] no <Scene> found');
+          return; // don't enter xmlMode
+        }
+      
+        renderScene(target);           // your existing renderer
+        play('InitialPosition');       // optional
         setTimeout(() => play(autoplay || 'In'), 10);
+      
+        // only now hide the built-ins
+        document.body.classList.add('xmlMode');
       };
-
       loadAndRender();
     })();
 
