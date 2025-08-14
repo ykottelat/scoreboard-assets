@@ -17,13 +17,14 @@
       --digit-shadow:0 0 12px rgba(255,255,255,.15);
 
       /* Reference sizes (1024×576 design) */
-      --clock-w:460px; --clock-h:200px;
-      --logo-w:220px;  --logo-h:272px;
-      --sponsor-w:520px; --sponsor-h:254px;
-      --sponsor-gap: 12px;
-      --score-gap: 12px;
+      --clock-w:460px; --clock-h:200px;      /* clock box size */
+      --logo-w:220px;  --logo-h:272px;       /* logo box size */
+      --sponsor-w:520px; --sponsor-h:254px;  /* sponsor box size */
+      --sponsor-gap: 12px;                   /* vertical gap under the clock */
+      --score-gap: 12px;                     /* vertical gap under the logos (fallback) */
     }
 
+    /* Global: prevent horizontal scrollbars */
     *,*::before,*::after{ box-sizing:border-box; }
     html,body{ width:100%; max-width:100%; overflow-x:hidden; height:100%; }
     body{
@@ -37,23 +38,28 @@
     .board{
       width:min(100dvw, 1024px, calc(100dvh * (16/9)));
       aspect-ratio:16/9; height:auto;
+
       position:relative; overflow:hidden;
       padding:clamp(8px,2vw,24px);
       display:grid; grid-template-rows:auto 1fr auto;
+
       border-radius:24px;
       box-shadow:0 20px 60px rgba(0,0,0,.45) inset, 0 10px 30px rgba(0,0,0,.35);
-      background:rgba(13,71,161,.92);
-      container-type:size;
+      background:rgba(13,71,161,.92); /* blue board */
+
+      container-type:size; /* enable cqw/cqh */
     }
 
     .top{ display:grid; grid-template-columns:1fr auto 1fr; align-items:center; gap:clamp(8px,2vw,24px); }
 
+    /* === CLOCK: centered at top, fixed box === */
     .game-clock{
       position:absolute; top:0; left:50%; transform:translateX(-50%);
       width:var(--clock-w); height:var(--clock-h);
       display:grid; place-items:center;
       font-variant-numeric:tabular-nums; letter-spacing:.04em; text-shadow:var(--digit-shadow);
       font-weight:700;
+      /* Auto-fit text inside box */
       font-size: min(calc(var(--clock-w)/5.2), calc(var(--clock-h)*0.8));
       line-height:1;
       border-radius:16px; border:2px solid transparent;
@@ -61,47 +67,59 @@
       z-index:10;
     }
 
+    /* === LOGOS: centered in left/right spaces beside the centered clock === */
     .logo{
       position:absolute; top:0;
       width:var(--logo-w); height:var(--logo-h);
       object-fit:contain; filter:drop-shadow(0 4px 8px rgba(0,0,0,.5));
     }
+    /* midpoint between left edge and clock-left, minus half logo width */
     .logo.home{
       left: calc( (50% - (var(--clock-w) / 2)) / 2 - (var(--logo-w) / 2) );
     }
+    /* midpoint between clock-right and right edge, minus half logo width */
     .logo.away{
       left: calc( ((50% + (var(--clock-w) / 2)) + 100%) / 2 - (var(--logo-w) / 2) );
     }
 
+    /* === SPONSOR: centered directly under the clock, same width as the clock === */
     .sponsor-top{
       position:absolute;
       left:50%;
       transform:translateX(-50%);
+      /* place below whichever is taller (logos vs clock) */
       top: calc( max(var(--logo-h), var(--clock-h)) + var(--sponsor-gap) );
-      width: var(--clock-w);
+      width: var(--clock-w);               /* <- lock to clock width */
       display:grid; place-items:center;
       z-index:5;
     }
     .sponsor-top img{
-      width: 100%;
-      height: auto;
-      object-fit: contain;
+      width: 100%; height: auto; object-fit: contain;
       filter: drop-shadow(0 6px 16px rgba(0,0,0,.6));
     }
 
+    /* Scores: centered under their respective logos */
     .score{
       position: absolute;
-      top: calc(var(--logo-h) + var(--score-gap));
-      width: var(--logo-w);
-      height: var(--clock-h);
+      top: calc(var(--logo-h) + var(--score-gap));  /* directly under logos */
+      width: var(--logo-w);                          /* same width as logo box */
+      height: var(--clock-h);                        /* same height as the clock box */
       display: grid; place-items: center;
+
       font-variant-numeric: tabular-nums;
       font-weight: 800;
       text-shadow: var(--digit-shadow);
       line-height: 1;
-      font-size: min( calc(var(--clock-h) * 0.8), calc(var(--logo-w) / 2.2) );
+
+      /* Auto-fit digits; cap by clock height (same max as clock) */
+      font-size: min(
+        calc(var(--clock-h) * 0.8),
+        calc(var(--logo-w) / 2.2)
+      );
+
       z-index: 7;
     }
+
     .score.home{
       left: calc( (50% - (var(--clock-w) / 2)) / 2 - (var(--logo-w) / 2) );
     }
@@ -122,7 +140,7 @@
       text-shadow: 0 0 10px rgba(0,0,0,.6);
       z-index: 4;
     }
-
+    
     .labels{
       position:absolute; left:0; right:0; top:50%; transform:translateY(-50%);
       pointer-events:none; display:grid; grid-template-columns:1fr 1fr;
@@ -145,14 +163,41 @@
     .controls .spacer{ width:1px; height:20px; background:rgba(255,255,255,.18); margin:0 4px; }
     .clean .controls{ display:none; }
 
+    /* === XML LAYERS (always-on styles; not gated by @supports) === */
+    .xml-layers{
+      position:absolute; inset:0;
+      pointer-events:none;           /* let clicks pass through unless you change it */
+      z-index:12;
+      container-type:size;
+    }
+    .xml-layers .item{ position:absolute; overflow:hidden; }
+    .xml-layers .text{
+      display:flex; line-height:1; padding:0 .25rem; word-break:break-word;
+    }
+    .xml-layers .align-left   { justify-content:flex-start; text-align:left; }
+    .xml-layers .align-center { justify-content:center;     text-align:center; }
+    .xml-layers .align-right  { justify-content:flex-end;   text-align:right; }
+    .xml-layers .valign-top    { align-items:flex-start; }
+    .xml-layers .valign-middle { align-items:center; }
+    .xml-layers .valign-bottom { align-items:flex-end; }
+
+    /* Hide built-in widgets when XML mode is active */
+    body.xmlMode .top,
+    body.xmlMode .sponsor-top,
+    body.xmlMode .middle,
+    body.xmlMode .labels,
+    body.xmlMode .bottom,
+    body.xmlMode .controls { display:none !important; } /* <- fixed selector */
+
+    /* ===== Responsive extras that use container query units ===== */
     @supports (width: 1cqw){
       :root{
-        --logo-w-p:21.484375;   /* 220/1024 * 100 */
-        --logo-h-p:47.222222;   /* 272/576  * 100 */
-        --sponsor-w-p:50.78125; /* 520/1024 * 100 */
-        --sponsor-h-p:44.097222;/* 254/576  * 100 */
-        --clock-w-p:44.921875;  /* 460/1024 * 100 */
-        --clock-h-p:34.722222;  /* 200/576  * 100 */
+        --logo-w-p:21.484375;   /* 220/1024*100 */
+        --logo-h-p:47.222222;   /* 272/576*100 */
+        --sponsor-w-p:50.78125; /* 520/1024*100 */
+        --sponsor-h-p:44.097222;/* 254/576*100 */
+        --clock-w-p:44.921875;  /* 460/1024*100 */
+        --clock-h-p:34.722222;  /* 200/576*100 */
         --sponsor-gap-p: 2;
         --score-gap-p: 2;
       }
@@ -171,17 +216,22 @@
         width: calc(var(--clock-w-p) * 1cqw);
         height: calc(var(--clock-h-p) * 1cqh);
         left:50%; transform:translateX(-50%);
-        font-size: min( calc((var(--clock-w-p) * 1cqw) / 3.3), calc(var(--clock-h-p) * 1cqh * 0.8) );
+        font-size: min(
+          calc((var(--clock-w-p) * 1cqw) / 3.3),
+          calc(var(--clock-h-p) * 1cqh * 0.8)
+        );
       }
       .logo{
         width: calc(var(--logo-w-p) * 1cqw);
         height: calc(var(--logo-h-p) * 1cqh);
       }
       .logo.home{
-        left: calc( (50% - ( (var(--clock-w-p) * 1cqw) / 2 )) / 2 - ( (var(--logo-w-p) * 1cqw) / 2 ) );
+        left: calc( (50% - ( (var(--clock-w-p) * 1cqw) / 2 )) / 2
+                    - ( (var(--logo-w-p) * 1cqw) / 2 ) );
       }
       .logo.away{
-        left: calc( ( (50% + ( (var(--clock-w-p) * 1cqw) / 2 )) + 100% ) / 2 - ( (var(--logo-w-p) * 1cqw) / 2 ) );
+        left: calc( ( (50% + ( (var(--clock-w-p) * 1cqw) / 2 )) + 100% ) / 2
+                    - ( (var(--logo-w-p) * 1cqw) / 2 ) );
       }
       .sponsor-top{
         top: calc( (var(--clock-h-p) * 1cqh) + (var(--sponsor-gap-p) * 1cqh) );
@@ -192,49 +242,33 @@
         top: calc( (var(--logo-h-p) * 1cqh) + (var(--score-gap-p) * 1cqh) );
         width:  calc(var(--logo-w-p) * 1cqw);
         height: calc(var(--clock-h-p) * 1cqh);
-        font-size: min( calc((var(--clock-h-p) * 1cqh) * 0.8), calc((var(--logo-w-p) * 1cqw) / 1.2) );
+        font-size: min(
+          calc((var(--clock-h-p) * 1cqh) * 0.8),
+          calc((var(--logo-w-p) * 1cqw) / 1.2)
+        );
+      }
+      .score.home{
+        left: calc( (50% - ( (var(--clock-w-p) * 1cqw) / 2 )) / 2
+                    - ( (var(--logo-w-p) * 1cqw) / 2 ) );
+      }
+      .score.away{
+        left: calc( ( (50% + ( (var(--clock-w-p) * 1cqw) / 2 )) + 100% ) / 2
+                    - ( (var(--logo-w-p) * 1cqw) / 2 ) );
       }
     }
-
-    /* === XML LAYERS === */
-    .xml-layers{
-      position:absolute; inset:0;
-      pointer-events:none;
-      z-index:12;
-      container-type:size;
-    }
-    .xml-layers .item{ position:absolute; overflow:hidden; }
-    .xml-layers .text{
-      display:flex; line-height:1; padding:0 .25rem; word-break:break-word;
-    }
-    .xml-layers .align-left   { justify-content:flex-start; text-align:left; }
-    .xml-layers .align-center { justify-content:center;     text-align:center; }
-    .xml-layers .align-right  { justify-content:flex-end;   text-align:right; }
-    .xml-layers .valign-top    { align-items:flex-start; }
-    .xml-layers .valign-middle { align-items:center; }
-    .xml-layers .valign-bottom { align-items:flex-end; }
-
-    /* Hide only the built-ins in XML mode (NOT the whole .top!) */
-    body.xmlMode .game-clock,
-    body.xmlMode .logo,
-    body.xmlMode .sponsor-top,
-    body.xmlMode .middle,
-    body.xmlMode .labels,
-    body.xmlMode .bottom { display:none !important; }
   </style>
 </head>
 <body>
   <div class="board" id="board">
-
-    <!-- XML-driven overlay lives ABOVE everything -->
-    <div id="xmlLayers" class="xml-layers" aria-label="XML Layers"></div>
-
     <div class="top">
       <img id="homeLogo" class="logo home" alt="Home logo" />
       <div class="game-clock" id="gameClock">00:00</div>
       <img id="awayLogo" class="logo away" alt="Away logo" />
+      <!-- XML-driven overlay -->
+      <div id="xmlLayers" class="xml-layers" aria-label="XML Layers"></div>
     </div>
 
+    <!-- Sponsor centered directly under the clock -->
     <div class="sponsor-top"><img id="sponsorLogo" alt="Sponsor logo" /></div>
 
     <div class="middle">
@@ -265,226 +299,23 @@
   </div>
 
   <script>
-    /* ================== Server Bridge (WebSocket) ==================
-       Accepts:
-         - {type:'state', serverNowMs, teams, score, clock, xml?, scene?, autoplay?}
-         - {type:'teams', ...}
-         - {type:'score', home, away}
-         - {type:'clock', running, startEpochMs, carryMs, serverNowMs}
-         - {type:'xml', url, scene, autoplay}
-         - {type:'scene', name, autoplay}
-         - {type:'anim',  name}
-    ================================================================= */
-      
-      // --- WebSocket client with status + logs ---
-      (function(){
-        const qs = (s) => document.querySelector(s);
-        const params = __params; // reuse the early-parsed params
-      
-        // Create a tiny status dot
-        const dot = document.createElement('div');
-        Object.assign(dot.style, {
-          position:'absolute', right:'10px', bottom:'10px', width:'10px', height:'10px',
-          borderRadius:'50%', background:'#888', boxShadow:'0 0 8px rgba(0,0,0,.4)', zIndex:9999
-        });
-        document.body.appendChild(dot);
-        const setDot = (c)=>dot.style.background=c;
-      
-        // Choose WS URL
-        const defaultWS = (location.protocol === 'https:' ? 'wss://' : 'ws://') + location.host + '/ws';
-        const wsUrl = params.get('ws') || defaultWS;
-      
-        // If you’re on https://ykottelat.github.io you MUST pass ?ws=wss://<yourapp>.azurewebsites.net/ws
-        console.info('[WS] target =', wsUrl);
-      
-        let ws, tries = 0, timer;
-        function connectWS(){
-          clearTimeout(timer);
-          tries++;
-          setDot('#888');
-          console.info(`[WS] connecting (attempt ${tries})…`);
-      
-          try { if (ws) ws.close(); } catch(_){}
-          ws = new WebSocket(wsUrl);
-      
-          ws.addEventListener('open', () => {
-            setDot('#0ad10a');
-            console.info('[WS] open');
-            // Also hide controls on open (in case clean=1 wasn’t used)
-            const c = qs('#controls');
-            if (c && (params.get('clean') === '1' || params.has('ws'))) c.style.display = 'none';
-            ws.send(JSON.stringify({ type:'hello', role:'viewer', version:'xml-bind-1.1' }));
-          });
-      
-          ws.addEventListener('message', async (evt) => {
-            let msg;
-            try { msg = JSON.parse(evt.data); } catch(e){ return; }
-            const t = (msg.type || msg.cmd || msg.action || '').toLowerCase();
-      
-            // ---- handle server messages (unchanged logic) ----
-            if (typeof msg.serverNowMs === 'number') window.__skewMs = Date.now() - msg.serverNowMs;
-      
-            if (t === 'state'){
-              if (msg.teams) applyTeams(msg.teams);
-              if (msg.score) applyScore(msg.score);
-              if (msg.clock) applyClock(msg.clock);
-              if (msg.xml && msg.xml.url && typeof window.loadXML === 'function'){
-                try { await window.loadXML(msg.xml.url, msg.xml.scene, msg.xml.autoplay); } catch(e){ console.warn(e); }
-              }
-              if (msg.scene && typeof window.setXMLScene === 'function'){
-                window.setXMLScene(msg.scene);
-                if (msg.autoplay && typeof window.playXML === 'function') window.playXML(msg.autoplay);
-              }
-              return;
-            }
-      
-            if (t === 'teams') { applyTeams(msg); return; }
-            if (t === 'score') { applyScore(msg); return; }
-            if (t === 'clock') { applyClock(msg); return; }
-      
-            if (t === 'xml' && typeof window.loadXML === 'function'){
-              if (msg.url) {
-                try { await window.loadXML(msg.url, msg.scene, msg.autoplay); } catch(e){ console.warn(e); }
-              }
-              return;
-            }
-            if (t === 'scene' && typeof window.setXMLScene === 'function'){
-              window.setXMLScene(msg.name || msg.scene || '');
-              if (msg.autoplay && typeof window.playXML === 'function') window.playXML(msg.autoplay);
-              return;
-            }
-            if (t === 'anim' && typeof window.playXML === 'function'){
-              window.playXML(msg.name || 'In');
-              return;
-            }
-          });
-      
-          ws.addEventListener('close', (e) => {
-            setDot('#e53935');
-            console.warn('[WS] close', e.code, e.reason || '');
-            // retry
-            timer = setTimeout(connectWS, Math.min(8000, 500 * tries));
-          });
-      
-          ws.addEventListener('error', (e) => {
-            setDot('#e53935');
-            console.error('[WS] error', e);
-            try { ws.close(); } catch(_){}
-          });
-        }
-      
-        // helpers used by the message handler (same as your current ones)
-        let __skewMs = 0;
-        function applyTeams(t){
-          if (t.homeName !== undefined) qs('#homeName').textContent = t.homeName || '';
-          if (t.awayName !== undefined) qs('#awayName').textContent = t.awayName || '';
-          if (t.homeLogo){ const el = qs('#homeLogo'); el.src = t.homeLogo; el.style.visibility='visible'; }
-          if (t.awayLogo){ const el = qs('#awayLogo'); el.src = t.awayLogo; el.style.visibility='visible'; }
-          if (t.sponsor ){ const el = qs('#sponsorLogo'); el.src = t.sponsor;  el.style.visibility='visible'; }
-          // XML mirrors if present
-          const by = window._xmlByName || {};
-          if (by.ClubLogo && t.homeLogo)  by.ClubLogo.src  = t.homeLogo;
-          if (by.ClubLogo2 && t.awayLogo) by.ClubLogo2.src = t.awayLogo;
-          if (by.SponsorLogo && t.sponsor) by.SponsorLogo.src = t.sponsor;
-          if (by.HomeTeam) by.HomeTeam.textContent = t.homeName ?? '';
-          if (by.AwayTeam) by.AwayTeam.textContent = t.awayName ?? '';
-        }
-        function applyScore(s){
-          if (typeof s.home === 'number') qs('#homeScore').textContent = String(s.home);
-          if (typeof s.away === 'number') qs('#awayScore').textContent = String(s.away);
-          const by = window._xmlByName || {};
-          if (by.HomeScore && typeof s.home === 'number') by.HomeScore.textContent = String(s.home);
-          if (by.AwayScore && typeof s.away === 'number') by.AwayScore.textContent = String(s.away);
-          }
-        function applyClock(c){
-          if (typeof c.serverNowMs === 'number') __skewMs = Date.now() - c.serverNowMs;
-          window.net = { running: !!c.running, startEpochMs: c.startEpochMs || 0, carryMs: c.carryMs || 0 };
-        }
-
-        connectWS();
-      })();
-      // ===== Utilities used by RAF/TOD =====
-      const pad2 = (n) => String(n).padStart(2, '0');
-      const computeDisplayFromClock = (clock) => {
-        const nowMs = Date.now() - (window.net ? skewMs : 0);
-        const elapsed = (clock.running ? (nowMs - clock.startEpochMs) : 0) + (clock.carryMs || 0);
-        const total = Math.max(0, Math.floor(elapsed / 1000));
-        return `${pad2(Math.floor(total/60))}:${pad2(total%60)}`;
-      };
-
-      // Game time — update built-in AND XML's "GameTime"
-      const tickGameClock = () => {
-        if (window.net) {
-          const txt = computeDisplayFromClock({
-            running: window.net.running,
-            startEpochMs: window.net.startEpochMs,
-            carryMs: window.net.carryMs
-          });
-          gameClockEl.textContent = txt;
-          if (hasEngine() && xml().GameTime) xml().GameTime.textContent = txt;
-        }
-        requestAnimationFrame(tickGameClock);
-      };
-      requestAnimationFrame(tickGameClock);
-
-      // Time of day — update built-in AND XML's "TOD"
-      const todEl = qs('#timeOfDay');
-      const tickTOD = () => {
-        const now = new Date();
-        const txt = `${pad2(now.getHours())}:${pad2(now.getMinutes())}:${pad2(now.getSeconds())}`;
-        todEl.textContent = txt;
-        if (hasEngine() && xml().TOD) xml().TOD.textContent = txt;
-      };
-      tickTOD(); setInterval(tickTOD, 1000);
-
-      // Buttons (local fallback when no WS)
-      const homeScoreEl = qs('#homeScore');
-      const awayScoreEl = qs('#awayScore');
-      let local = { running:false, startTime:0, carry:0 };
-      function startClock(){ if (window.net || local.running) return; local.running = true; local.startTime = Date.now(); qs('#playPause').textContent='⏸ Pause'; }
-      function pauseClock(){ if (window.net || !local.running) return; local.running = false; local.carry += Date.now() - local.startTime; qs('#playPause').textContent='▶︎ Start'; }
-      function resetClock(){ if (window.net) return; local = { running:false, startTime:0, carry:0 }; gameClockEl.textContent='00:00'; qs('#playPause').textContent='▶︎ Start'; }
-      const bump = (el, d) => { if (window.net) return; const v = Math.max(0, (parseInt(el.textContent,10)||0) + d); el.textContent = v; };
-      qs('#playPause').addEventListener('click', () => (local.running ? pauseClock() : startClock()));
-      qs('#reset').addEventListener('click', resetClock);
-      qs('#homePlus').addEventListener('click', () => bump(homeScoreEl, +1));
-      qs('#homeMinus').addEventListener('click', () => bump(homeScoreEl, -1));
-      qs('#awayPlus').addEventListener('click', () => bump(awayScoreEl, +1));
-      qs('#awayMinus').addEventListener('click', () => bump(awayScoreEl, -1));
-      qs('#fullBtn').addEventListener('click', async () => {
-        const el = qs('#board');
-        if (!document.fullscreenElement) { await el.requestFullscreen().catch(()=>{}); }
-        else { await document.exitFullscreen().catch(()=>{}); }
-      });
-
-      // Theme + placeholders + params (unchanged)
-      if ((params.get('theme')||'').toLowerCase()==='light'){
-        document.documentElement.style.setProperty('--bg','#f7f7f9');
-        document.documentElement.style.setProperty('--fg','#0b0b0b');
-        document.documentElement.style.setProperty('--muted','#4a4a4a');
-        document.documentElement.style.setProperty('--digit-shadow','0 0 12px rgba(0,0,0,.12)');
+    /* ================== early params + clean mode ================== */
+    const __params = new URLSearchParams(location.search);
+    (function earlyHideControls(){
+      if (__params.get('clean') === '1') {
+        const c = document.getElementById('controls');
+        if (c) c.style.display = 'none';
       }
-
-      const setImg = (id, url) => {
-        const el = qs(id);
-        if (url) { el.src = url; el.style.visibility = 'visible'; }
-        else { el.style.visibility = 'hidden'; }
-      };
-      const setText = (id, val) => { if (val != null) qs(id).textContent = val; };
-
-      setText('#homeName', params.get('homeName') || '');
-      setText('#awayName', params.get('awayName') || '');
-      setImg('#homeLogo', params.get('homeLogo'));
-      setImg('#awayLogo', params.get('awayLogo'));
-      setImg('#sponsorLogo', params.get('sponsor'));
-      if (params.has('home')) homeScoreEl.textContent = String(parseInt(params.get('home'),10) || 0);
-      if (params.has('away')) awayScoreEl.textContent = String(parseInt(params.get('away'),10) || 0);
-      if (params.get('clean') === '1') document.body.classList.add('clean');
     })();
 
-    /* ================= XML Layer Engine (doubles 512×288 -> 1024×576) ================= */
+    /* ================= XML Layer Engine with Animations (targets 1024×576) ================
+       Usage:
+         - Open with:
+           index.html?xml=Football.xml&scene=GameClock&autoplay=In
+         - Server can also push {type:'xml', url, scene, autoplay} or {type:'scene'|'anim'}.
+       ======================================================================================*/
     (function(){
-      const params = new URLSearchParams(location.search);
+      const params = __params;
       const xmlUrl = params.get('xml');
       const initialScene = params.get('scene') || null;
       const autoPlayName = (params.get('autoplay') || 'In');
@@ -495,6 +326,7 @@
       const LAYERS = document.getElementById('xmlLayers');
       const TARGET_W = 1024, TARGET_H = 576;
 
+      // Utilities
       const parseColor = (s) => {
         if (!s) return null;
         const [r,g,b,a] = s.split(';').map(n => +n || 0);
@@ -512,10 +344,7 @@
         return `${h} ${v}`;
       };
       const toPct = (px, dim) => (px / dim) * 100;
-
-      let sceneRegistry = null; // { tracks:Map, activeAnims:Map }
-      window._xmlByName = {};   // <- name => element map for bindings
-
+      function parseNumList(s){ return s ? s.split(';').map(v => +v) : []; }
       function buildKeyframes(xList, yList, tList, sx, sy){
         const n = Math.min(xList.length, yList.length, tList.length);
         if (n === 0) return { frames: [], duration: 0 };
@@ -523,35 +352,46 @@
         const frames = [];
         for (let i = 0; i < n; i++){
           const leftPx = xList[i] * sx;
-          const topPx  = (-yList[i]) * sy;
+          const topPx  = (-yList[i]) * sy;  // XML y-down → CSS y-down (negative to move up)
           frames.push({
             left:  toPct(leftPx, TARGET_W) + '%',
             top:   toPct(topPx,  TARGET_H) + '%',
-            offset: (total ? (tList[i] / total) : (i === n-1 ? 1 : 0))
+            offset: total ? (tList[i] / total) : (i === n-1 ? 1 : 0)
           });
         }
         frames[frames.length-1].offset = 1;
         return { frames, duration: total * 1000 };
       }
-      const parseNumList = (s) => (s ? s.split(';').map(v => +v) : []);
+
+      // Global index of items by name so WS / ticks can update them.
+      window._xmlByName = Object.create(null);
+
+      // Keep per-scene animation registry
+      let sceneRegistry = null; // { tracks: Map<HTMLElement, Map<string, AnimDef>>, activeAnims: Map<HTMLElement, Animation> }
 
       function renderScene(sceneEl){
+        // Cancel any running animations from previous scene
         if (sceneRegistry && sceneRegistry.activeAnims){
           for (const anim of sceneRegistry.activeAnims.values()){ try{ anim.cancel(); }catch(e){} }
         }
         sceneRegistry = { tracks:new Map(), activeAnims:new Map() };
-        window._xmlByName = {};
+        window._xmlByName = Object.create(null);
+
         LAYERS.innerHTML = '';
 
-        // Base: try Panel; fallback 512×288
+        // Infer base from Panel width/height; fallback to 512×288
         let baseW = 512, baseH = 288;
         const panel = sceneEl.querySelector('Item[prefab="Panel"]');
-        if (panel){ baseW = +(panel.getAttribute('width') || baseW); baseH = +(panel.getAttribute('height') || baseH); }
+        if (panel){
+          baseW = +(panel.getAttribute('width') || baseW);
+          baseH = +(panel.getAttribute('height') || baseH);
+        }
 
         const sx = TARGET_W / baseW;
         const sy = TARGET_H / baseH;
 
         const items = [...sceneEl.querySelectorAll('Item')];
+
         for (const it of items){
           const prefab = it.getAttribute('prefab') || 'Unknown';
           if (prefab === 'AnimationPrefab') continue;
@@ -579,15 +419,18 @@
             const bg = parseColor(it.getAttribute('imagecolor'));
             if (bg) el.style.background = bg;
             el.style.pointerEvents = 'none';
-          } else if (prefab === 'Image'){
+          }
+          else if (prefab === 'Image'){
             const src = it.getAttribute('defaultimage') || '';
             const img = el;
-            img.decoding = 'async'; img.loading = 'eager';
+            img.decoding = 'async';
+            img.loading = 'eager';
             if (src) img.src = src;
             img.style.objectFit = 'contain';
             img.style.filter = 'drop-shadow(0 4px 8px rgba(0,0,0,.35))';
             img.alt = name;
-          } else if (prefab === 'Text'){
+          }
+          else if (prefab === 'Text'){
             el.classList.add('text');
             const color = parseColor(it.getAttribute('textcolor')) || 'rgba(255,255,255,.95)';
             const font  = parseFont(it.getAttribute('font'));
@@ -603,19 +446,12 @@
             el.style.setProperty('--box-h-pct', hPct);
             el.style.fontSize = `clamp(${minPx}px, calc(var(--box-h-pct) * 1cqh * 0.70), ${maxPx}px)`;
             el.style.textShadow = '0 0 12px rgba(0,0,0,.35)';
-          } else {
-            el.style.outline = '1px dashed rgba(255,255,255,.25)';
-            el.style.color = 'rgba(255,255,255,.7)';
-            el.style.display = 'flex';
-            el.style.alignItems = 'center';
-            el.style.justifyContent = 'center';
-            el.textContent = name || prefab;
           }
 
           LAYERS.appendChild(el);
-          window._xmlByName[name] = el;
+          window._xmlByName[name] = el;   // <-- index by name
 
-          // Animations on this item
+          // Parse animations on this item
           const animNodes = [...it.querySelectorAll(':scope > Animation')];
           if (animNodes.length){
             const trackMap = new Map();
@@ -623,17 +459,18 @@
               const animName = (an.getAttribute('name') || 'Custom').toLowerCase();
               const xs = parseNumList(an.getAttribute('x'));
               const ys = parseNumList(an.getAttribute('y'));
-              const ts = parseNumList(an.getAttribute('duration'));
+              const ts = parseNumList(an.getAttribute('duration')); // absolute times (s)
               const { frames, duration } = buildKeyframes(xs, ys, ts, sx, sy);
 
               let easing = 'ease-in-out';
-              if (/^in$/i.test(animName))  easing = 'cubic-bezier(.2,.8,.2,1)';
+              if (/^in$/i.test(animName)) easing = 'cubic-bezier(.2,.8,.2,1)';
               if (/^out$/i.test(animName)) easing = 'cubic-bezier(.4,0,.6,1)';
 
               trackMap.set(animName, { frames, duration, easing });
             }
             sceneRegistry.tracks.set(el, trackMap);
 
+            // If there's an InitialPosition, set it immediately
             const init = trackMap.get('initialposition');
             if (init && init.frames.length){
               const last = init.frames[init.frames.length - 1];
@@ -648,19 +485,27 @@
         if (!sceneRegistry) return;
         const key = (animName || 'In').toLowerCase();
 
+        // Cancel any currently running animations so we can restart cleanly
         for (const [el, running] of sceneRegistry.activeAnims){
           try { running.cancel(); } catch(e){}
           sceneRegistry.activeAnims.delete(el);
         }
+
         for (const [el, trackMap] of sceneRegistry.tracks){
           const def = trackMap.get(key);
           if (!def || !def.frames.length || def.duration <= 0) continue;
-          const anim = el.animate(def.frames, { duration: def.duration, fill: 'forwards', easing: def.easing });
+
+          const anim = el.animate(def.frames, {
+            duration: def.duration,
+            fill: 'forwards',
+            easing: def.easing
+          });
           sceneRegistry.activeAnims.set(el, anim);
         }
       }
-      window.playXML = play;
 
+      // Expose helpers
+      window.playXML = play;
       window.setXMLScene = (name) => {
         if (!window._xmlDOM) return;
         const next = window._xmlDOM.querySelector(`Scene[scenename="${CSS.escape(name)}"]`);
@@ -671,6 +516,7 @@
         }
       };
 
+      // Fetch and render
       async function loadAndRender(){
         let xmlText = '';
         try{
@@ -684,16 +530,284 @@
         window._xmlDOM = dom;
 
         let sceneEl = null;
-        if (initialScene) sceneEl = dom.querySelector(`Scene[scenename="${CSS.escape(initialScene)}"]`);
+        if (initialScene){
+          sceneEl = dom.querySelector(`Scene[scenename="${CSS.escape(initialScene)}"]`);
+        }
         if (!sceneEl) sceneEl = dom.querySelector('Scene');
-        if (!sceneEl){ console.warn('No <Scene> found in XML.'); return; }
+        if (!sceneEl){
+          console.warn('No <Scene> found in XML.');
+          return;
+        }
 
         renderScene(sceneEl);
         play('InitialPosition');
         setTimeout(() => play(autoPlayName), 10);
       }
 
+      // also expose loader for WS-triggered XML changes
+      window.loadXML = async (url, scene, autoplay) => {
+        const res = await fetch(url, {cache:'no-store'});
+        const xmlText = await res.text();
+        const dom = new DOMParser().parseFromString(xmlText, 'text/xml');
+        window._xmlDOM = dom;
+        const target = scene
+          ? dom.querySelector(`Scene[scenename="${CSS.escape(scene)}"]`) || dom.querySelector('Scene')
+          : dom.querySelector('Scene');
+        if (!target) return;
+        renderScene(target);
+        play('InitialPosition');
+        setTimeout(() => play(autoplay || 'In'), 10);
+      };
+
       loadAndRender();
+    })();
+
+    /* ================= Utilities ================= */
+    const qs = (s) => document.querySelector(s);
+    const pad2 = (n) => String(n).padStart(2, '0');
+
+    /* ================= DOM refs ================= */
+    const gameClockEl = qs('#gameClock');
+    const todEl = qs('#timeOfDay');
+    const homeScoreEl = qs('#homeScore');
+    const awayScoreEl = qs('#awayScore');
+
+    /* ================= Local Game Clock (fallback when no server) ================= */
+    let local = { running:false, startTime:0, carry:0 };
+
+    /* ================= Network Clock (authoritative when present) ================= */
+    let net = null; // { running, startEpochMs, carryMs }
+    let skewMs = 0; // client_now - server_now
+
+    function computeDisplayFromClock(clock){
+      const nowMs = Date.now() - (net ? skewMs : 0);
+      const elapsed = (clock.running ? (nowMs - clock.startEpochMs) : 0) + (clock.carryMs || 0);
+      const total = Math.max(0, Math.floor(elapsed / 1000));
+      return `${pad2(Math.floor(total/60))}:${pad2(total%60)}`;
+    }
+
+    /* ===== RAF: update visible time (both built-in and XML layer if present) ===== */
+    const tickGameClock = () => {
+      let display;
+      if (net) {
+        display = computeDisplayFromClock({
+          running: net.running, startEpochMs: net.startEpochMs, carryMs: net.carryMs
+        });
+      } else {
+        const now = Date.now();
+        const elapsed = (local.running ? (now - local.startTime) : 0) + local.carry;
+        const total = Math.floor(elapsed / 1000);
+        display = `${pad2(Math.floor(total/60))}:${pad2(total%60)}`;
+      }
+      gameClockEl.textContent = display;
+
+      // mirror to XML item "GameTime" if present
+      const by = window._xmlByName || {};
+      if (by.GameTime) by.GameTime.textContent = display;
+
+      requestAnimationFrame(tickGameClock);
+    };
+    requestAnimationFrame(tickGameClock);
+
+    /* ===== Time of day (also mirror to XML "TOD") ===== */
+    const tickTOD = () => {
+      const now = new Date();
+      const str = `${pad2(now.getHours())}:${pad2(now.getMinutes())}:${pad2(now.getSeconds())}`;
+      todEl.textContent = str;
+      const by = window._xmlByName || {};
+      if (by.TOD) by.TOD.textContent = str;
+    };
+    tickTOD(); setInterval(tickTOD, 1000);
+
+    /* ===== Local-only score bumpers ===== */
+    const bump = (el, d) => { if (net) return; const v = Math.max(0, (parseInt(el.textContent,10)||0) + d); el.textContent = v; };
+
+    /* ===== Buttons ===== */
+    qs('#playPause').addEventListener('click', () => (local.running ? pauseClock() : startClock()));
+    qs('#reset').addEventListener('click', resetClock);
+    qs('#homePlus').addEventListener('click', () => bump(homeScoreEl, +1));
+    qs('#homeMinus').addEventListener('click', () => bump(homeScoreEl, -1));
+    qs('#awayPlus').addEventListener('click', () => bump(awayScoreEl, +1));
+    qs('#awayMinus').addEventListener('click', () => bump(awayScoreEl, -1));
+    qs('#fullBtn').addEventListener('click', async () => {
+      const el = qs('#board');
+      if (!document.fullscreenElement) { await el.requestFullscreen().catch(()=>{}); }
+      else { await document.exitFullscreen().catch(()=>{}); }
+    });
+
+    function startClock(){ if (net || local.running) return; local.running = true; local.startTime = Date.now(); qs('#playPause').textContent='⏸ Pause'; }
+    function pauseClock(){ if (net || !local.running) return; local.running = false; local.carry += Date.now() - local.startTime; qs('#playPause').textContent='▶︎ Start'; }
+    function resetClock(){ if (net) return; local = { running:false, startTime:0, carry:0 }; gameClockEl.textContent='00:00'; qs('#playPause').textContent='▶︎ Start'; }
+
+    /* ===== Query params (placeholders) ===== */
+    const params = __params;
+    const setImg = (id, url) => {
+      const el = qs(id);
+      if (url) { el.src = url; el.style.visibility = 'visible'; }
+      else { el.style.visibility = 'hidden'; }
+    };
+    const setText = (id, val) => { if (val != null) qs(id).textContent = val; };
+
+    setText('#homeName', params.get('homeName') || '');
+    setText('#awayName', params.get('awayName') || '');
+    setImg('#homeLogo', params.get('homeLogo'));
+    setImg('#awayLogo', params.get('awayLogo'));
+    setImg('#sponsorLogo', params.get('sponsor'));
+
+    if (params.has('home')) homeScoreEl.textContent = String(parseInt(params.get('home'),10) || 0);
+    if (params.has('away')) awayScoreEl.textContent = String(parseInt(params.get('away'),10) || 0);
+
+    if ((params.get('theme')||'').toLowerCase()==='light'){
+      document.documentElement.style.setProperty('--bg','#f7f7f9');
+      document.documentElement.style.setProperty('--fg','#0b0b0b');
+      document.documentElement.style.setProperty('--muted','#4a4a4a');
+      document.documentElement.style.setProperty('--digit-shadow','0 0 12px rgba(0,0,0,.12)');
+    }
+
+    // Default placeholders (ensure visibility even if query omitted)
+    if (!qs('#homeLogo').src){
+      const el = qs('#homeLogo');
+      el.src = 'data:image/svg+xml;utf8,' + encodeURIComponent(
+        `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 220 272">
+           <rect width="100%" height="100%" rx="24" fill="#1976d2"/>
+           <text x="50%" y="55%" text-anchor="middle" fill="#fff" font-size="140" font-family="Arial, Helvetica, sans-serif">H</text>
+         </svg>`
+      );
+      el.style.visibility = 'visible';
+    }
+    if (!qs('#awayLogo').src){
+      const el = qs('#awayLogo');
+      el.src = 'data:image/svg+xml;utf8,' + encodeURIComponent(
+        `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 220 272">
+           <rect width="100%" height="100%" rx="24" fill="#c62828"/>
+           <text x="50%" y="55%" text-anchor="middle" fill="#fff" font-size="140" font-family="Arial, Helvetica, sans-serif">A</text>
+         </svg>`
+      );
+      el.style.visibility = 'visible';
+    }
+    if (!qs('#sponsorLogo').src){
+      const el = qs('#sponsorLogo');
+      el.src = 'data:image/svg+xml;utf8,' + encodeURIComponent(
+        `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 520 254">
+           <rect width="100%" height="100%" fill="none"/>
+           <text x="50%" y="55%" text-anchor="middle" fill="#e0e0e0" font-size="64" font-family="Arial, Helvetica, sans-serif">YOUR SPONSOR</text>
+         </svg>`
+      );
+      el.style.visibility = 'visible';
+    }
+
+    /* ================= WebSocket sync (read-only client) ================= */
+    (function(){
+      const defaultWS = (location.protocol === 'https:' ? 'wss://' : 'ws://') + location.host + '/ws';
+      const wsUrl = params.get('ws') || defaultWS;
+      let ws;
+
+      function connectWS(){
+        if (!wsUrl) return;
+
+        console.info('[WS] connecting to', wsUrl);
+        ws = new WebSocket(wsUrl);
+        ws.addEventListener('open', () => {
+          console.info('[WS] open');
+          // Hide controls on connect as well
+          const c = document.getElementById('controls');
+          if (c && (params.get('clean') === '1' || params.has('ws'))) c.style.display = 'none';
+          ws.send(JSON.stringify({ type:'hello', role:'viewer' }));
+        });
+        ws.addEventListener('message', (evt) => {
+          try { handleServerMessage(JSON.parse(evt.data)); } catch(e){ console.warn('bad WS msg', e); }
+        });
+        ws.addEventListener('close', () => { console.warn('[WS] close'); setTimeout(connectWS, 1000); });
+        ws.addEventListener('error', () => { console.error('[WS] error'); try{ ws.close(); }catch(_){} });
+      }
+
+      function handleServerMessage(msg){
+        switch ((msg.type||'').toLowerCase()){
+          case 'state':{
+            if (typeof msg.serverNowMs === 'number') skewMs = Date.now() - msg.serverNowMs;
+
+            if (msg.teams){
+              const t = msg.teams;
+              if (t.homeName !== undefined) qs('#homeName').textContent = t.homeName || '';
+              if (t.awayName !== undefined) qs('#awayName').textContent = t.awayName || '';
+              if (t.homeLogo){ const el = qs('#homeLogo'); el.src = t.homeLogo; el.style.visibility='visible'; }
+              if (t.awayLogo){ const el = qs('#awayLogo'); el.src = t.awayLogo; el.style.visibility='visible'; }
+              if (t.sponsor ){ const el = qs('#sponsorLogo'); el.src = t.sponsor;  el.style.visibility='visible'; }
+
+              // mirror to XML if present
+              const by = window._xmlByName || {};
+              if (by.ClubLogo  && t.homeLogo) by.ClubLogo.src  = t.homeLogo;
+              if (by.ClubLogo2 && t.awayLogo) by.ClubLogo2.src = t.awayLogo;
+              if (by.SponsorLogo && t.sponsor) by.SponsorLogo.src = t.sponsor;
+              if (by.HomeTeam) by.HomeTeam.textContent = t.homeName ?? '';
+              if (by.AwayTeam) by.AwayTeam.textContent = t.awayName ?? '';
+            }
+            if (msg.score){
+              if (typeof msg.score.home === 'number') homeScoreEl.textContent = String(msg.score.home);
+              if (typeof msg.score.away === 'number') awayScoreEl.textContent = String(msg.score.away);
+
+              const by = window._xmlByName || {};
+              if (by.HomeScore && typeof msg.score.home === 'number') by.HomeScore.textContent = String(msg.score.home);
+              if (by.AwayScore && typeof msg.score.away === 'number') by.AwayScore.textContent = String(msg.score.away);
+            }
+            if (msg.clock){
+              net = { running:!!msg.clock.running, startEpochMs:msg.clock.startEpochMs||0, carryMs:msg.clock.carryMs||0 };
+              if (typeof msg.serverNowMs === 'number') skewMs = Date.now() - msg.serverNowMs;
+            }
+
+            // XML loader/scene autoplay if provided in state
+            if (msg.xml && msg.xml.url && typeof window.loadXML === 'function'){
+              window.loadXML(msg.xml.url, msg.xml.scene, msg.xml.autoplay).catch(()=>{});
+            }
+            if (msg.scene && typeof window.setXMLScene === 'function'){
+              window.setXMLScene(msg.scene);
+              if (msg.autoplay && typeof window.playXML === 'function') window.playXML(msg.autoplay);
+            }
+            break;
+          }
+          case 'teams':{
+            const t = msg;
+            const by = window._xmlByName || {};
+            if (t.homeName !== undefined) qs('#homeName').textContent = t.homeName || '';
+            if (t.awayName !== undefined) qs('#awayName').textContent = t.awayName || '';
+            if (t.homeLogo){ qs('#homeLogo').src = t.homeLogo; if (by.ClubLogo) by.ClubLogo.src = t.homeLogo; }
+            if (t.awayLogo){ qs('#awayLogo').src = t.awayLogo; if (by.ClubLogo2) by.ClubLogo2.src = t.awayLogo; }
+            if (t.sponsor ){ qs('#sponsorLogo').src = t.sponsor; if (by.SponsorLogo) by.SponsorLogo.src = t.sponsor; }
+            if (by.HomeTeam) by.HomeTeam.textContent = t.homeName ?? '';
+            if (by.AwayTeam) by.AwayTeam.textContent = t.awayName ?? '';
+            break;
+          }
+          case 'score':{
+            if (typeof msg.home === 'number') { homeScoreEl.textContent = String(msg.home); if (window._xmlByName?.HomeScore) window._xmlByName.HomeScore.textContent = String(msg.home); }
+            if (typeof msg.away === 'number') { awayScoreEl.textContent = String(msg.away); if (window._xmlByName?.AwayScore) window._xmlByName.AwayScore.textContent = String(msg.away); }
+            break;
+          }
+          case 'clock':{
+            net = { running:!!msg.running, startEpochMs:msg.startEpochMs||0, carryMs:msg.carryMs||0 };
+            if (typeof msg.serverNowMs === 'number') skewMs = Date.now() - msg.serverNowMs;
+            break;
+          }
+          case 'xml':{
+            if (msg.url && typeof window.loadXML === 'function'){
+              window.loadXML(msg.url, msg.scene, msg.autoplay).catch(()=>{});
+            }
+            break;
+          }
+          case 'scene':{
+            if (typeof window.setXMLScene === 'function'){
+              window.setXMLScene(msg.name || msg.scene || '');
+              if (msg.autoplay && typeof window.playXML === 'function') window.playXML(msg.autoplay);
+            }
+            break;
+          }
+          case 'anim':{
+            if (typeof window.playXML === 'function') window.playXML(msg.name || 'In');
+            break;
+          }
+        }
+      }
+
+      connectWS();
     })();
   </script>
 </body>
