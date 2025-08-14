@@ -566,6 +566,43 @@
     const qs = (s) => document.querySelector(s);
     const pad2 = (n) => String(n).padStart(2, '0');
 
+    // --- tiny [WS] logger -----------------------------------------
+    const WS_HISTORY = [];
+    const MAX_HISTORY = 200;
+    
+    // ?wslog=scene,anim  → only log those types; default "*" logs all
+    const WS_FILTER = (new URLSearchParams(location.search).get('wslog') || '*')
+      .split(',').map(s => s.trim().toLowerCase());
+    
+    function shouldLog(type){
+      return WS_FILTER[0] === '*' || WS_FILTER.includes((type||'').toLowerCase());
+    }
+    
+    function wsLog(dir, msg){
+      const type = (msg?.type || '(no type)').toLowerCase();
+      if (!shouldLog(type)) return;
+    
+      const now = new Date();
+      const ts = `${now.toLocaleTimeString([], {hour12:false})}.${String(now.getMilliseconds()).padStart(3,'0')}`;
+    
+      // brief summary per type for readability
+      let brief = '';
+      switch (type){
+        case 'state': brief = `scene=${msg.scene ?? msg.xml?.scene ?? '-'} running=${!!msg.clock?.running}`; break;
+        case 'scene': brief = `name=${msg.name || msg.scene} autoplay=${msg.autoplay || '-'}`; break;
+        case 'anim':  brief = `name=${msg.name || 'In'}`; break;
+        case 'xml':   brief = `url=${msg.url}`; break;
+        case 'score': brief = `home=${msg.home} away=${msg.away}`; break;
+        case 'teams': brief = `${msg.homeName||''} vs ${msg.awayName||''}`; break;
+      }
+    
+      console.log(`[WS] ${dir} ${ts} ${type}${brief ? ' — ' + brief : ''}`, msg);
+    
+      WS_HISTORY.push({ dir, ts, type, msg });
+      if (WS_HISTORY.length > MAX_HISTORY) WS_HISTORY.shift();
+    }
+    // ---------------------------------------------------------------
+
     /* ================= DOM refs ================= */
     const gameClockEl = qs('#gameClock');
     const todEl = qs('#timeOfDay');
@@ -709,19 +746,52 @@
         ws = new WebSocket(wsUrl);
         ws.addEventListener('open', () => {
           console.info('[WS] open');
-          // Hide controls on connect as well
-          const c = document.getElementById('controls');
-          if (c && (params.get('clean') === '1' || params.has('ws'))) c.style.display = 'none';
-          ws.send(JSON.stringify({ type:'hello', role:'viewer' }));
+          const hello = { type:'hello', role:'viewer' };
+          ws.send(JSON.stringify(hello));
+          wsLog('→', hello);
         });
+//          ws.addEventListener('open', () => {
+  //        console.info('[WS] open');
+    //      // Hide controls on connect as well
+      //    const c = document.getElementById('controls');
+        //  if (c && (params.get('clean') === '1' || params.has('ws'))) c.style.display = 'none';
+          //ws.send(JSON.stringify({ type:'hello', role:'viewer' }));
+        //});
         ws.addEventListener('message', (evt) => {
-          try { handleServerMessage(JSON.parse(evt.data)); } catch(e){ console.warn('bad WS msg', e); }
+          let msg;
+          try { msg = JSON.parse(evt.data); }
+          catch(e){ console.warn('[WS] bad JSON', evt.data); return; }
+          wsLog('←', msg);
+          handleServerMessage(msg); // your existing switch(msg.type) handler
         });
-        ws.addEventListener('close', () => { console.warn('[WS] close'); setTimeout(connectWS, 1000); });
-        ws.addEventListener('error', () => { console.error('[WS] error'); try{ ws.close(); }catch(_){} });
-      }
 
-      function handleServerMessage(msg){
+//          ws.addEventListener('message', (evt) => {
+  //        try { handleServerMessage(JSON.parse(evt.data)); } catch(e){ console.warn('bad WS msg', e); }
+    //    });
+      //  ws.addEventListener('close', () => { console.warn('[WS] close'); setTimeout(connectWS, 1000); });
+        //ws.addEventListener('error', () => { console.error('[WS] error'); try{ ws.close(); }catch(_){} });
+     // }
+      // Optional: wrap send() so ANY future sends are logged automatically
+      const _send = ws.send.bind(ws);
+      ws.send = (data) => {
+        try { wsLog('→', JSON.parse(data)); } catch {}
+        return _send(data);
+      };
+      if (new URLSearchParams(location.search).has('logpanel')){
+        const box = Object.assign(document.createElement('pre'), {
+          id:'wsPanel', style:`
+            position:fixed; inset:auto 8px 8px 8px; max-height:35vh; overflow:auto;
+            background:rgba(0,0,0,.6); color:#eee; padding:8px; border-radius:8px; font:12px/1.2 monospace;
+            z-index:99999;`
+        });
+        document.body.appendChild(box);
+        const old = console.log;
+        console.log = (...a) => { old(...a); if (String(a[0]||'').startsWith('[WS]')) {
+          box.textContent += a.map(x => (typeof x==='string' ? x : JSON.stringify(x))).join(' ') + '\n';
+          box.scrollTop = box.scrollHeight;
+        }};
+      }
+        function handleServerMessage(msg){
         switch ((msg.type||'').toLowerCase()){
           case 'state':{
             if (typeof msg.serverNowMs === 'number') skewMs = Date.now() - msg.serverNowMs;
