@@ -323,31 +323,56 @@
       if (WS_HISTORY.length > MAX_HISTORY) WS_HISTORY.shift();
     }
 
-    /* ================= XML Layer Engine (always available) ================= */
+    /* ================= XML Layer Engine (case-insensitive attrs, robust) ============= */
     (function(){
       const params = __params;
       const LAYERS = document.getElementById('xmlLayers');
       const TARGET_W = 1024, TARGET_H = 576;
-
-      // Utilities
-      const parseColor = (s) => {
+    
+      // ---- helpers ---------------------------------------------------------
+      const toPct = (px, dim) => (px / dim) * 100;
+    
+      // Build a lower-cased attribute map for easy, case-insensitive lookups
+      function attrsOf(el){
+        const out = Object.create(null);
+        for (const a of el.attributes) out[a.name.toLowerCase()] = a.value;
+        return out;
+      }
+      function getNum(a, ...keys){
+        for (const k of keys){
+          if (a[k] != null && a[k] !== '') return +a[k];
+        }
+        return 0;
+      }
+      function getStr(a, ...keys){
+        for (const k of keys){
+          if (a[k] != null) return a[k];
+        }
+        return '';
+      }
+      function parseColor(s) {
         if (!s) return null;
-        const [r,g,b,a] = s.split(';').map(n => +n || 0);
-        return `rgba(${r},${g},${b},${(a??255)/255})`;
-      };
-      const parseFont = (s) => {
+        // Accept "r;g;b;a" OR "#rrggbb" OR "rgba(...)"
+        if (s.includes(';')) {
+          const [r,g,b,a] = s.split(';').map(n => +n || 0);
+          return `rgba(${r},${g},${b},${(a??255)/255})`;
+        }
+        return s; // assume valid css color
+      }
+      function parseFont(s){
         if (!s) return { family: `'Droid Sans Mono', monospace`, sizePx: 24 };
-        const [family, sz] = s.split(';');
-        return { family: family || `'Droid Sans Mono', monospace`, sizePx: +(sz||24) };
-      };
-      const alignClasses = (align) => {
-        const a = (align || '').toLowerCase();
+        const parts = s.split(';');
+        return { family: parts[0] || `'Droid Sans Mono', monospace`, sizePx: +(parts[1]||24) };
+        // also works for "Family;Size"
+      }
+      function alignClasses(val){
+        const a = (val || '').toLowerCase();
         const h = a.includes('left') ? 'align-left' : a.includes('right') ? 'align-right' : 'align-center';
         const v = a.includes('top') ? 'valign-top' : a.includes('bottom') ? 'valign-bottom' : 'valign-middle';
         return `${h} ${v}`;
-      };
-      const toPct = (px, dim) => (px / dim) * 100;
-      function parseNumList(s){ return s ? s.split(';').map(v => +v) : []; }
+      }
+      // Accept X/Y/Duration in any case
+      function parseNumList(s){ return s ? s.split(/[;,]/).map(v => +v) : []; }
       function buildKeyframes(xList, yList, tList, sx, sy){
         const n = Math.min(xList.length, yList.length, tList.length);
         if (n === 0) return { frames: [], duration: 0 };
@@ -355,7 +380,7 @@
         const frames = [];
         for (let i = 0; i < n; i++){
           const leftPx = xList[i] * sx;
-          const topPx  = yList[i] * sy; // y-down
+          const topPx  = yList[i] * sy;        // y-down
           frames.push({
             left:  toPct(leftPx, TARGET_W) + '%',
             top:   toPct(topPx,  TARGET_H) + '%',
@@ -365,66 +390,74 @@
         frames[frames.length-1].offset = 1;
         return { frames, duration: total * 1000 };
       }
-
-      // Global index of items by name so WS / ticks can update them.
+    
+      // Global index so WS/ticks can update by name
       window._xmlByName = Object.create(null);
-
-      // Keep per-scene animation registry
-      let sceneRegistry = null; // { tracks: Map<HTMLElement, Map<string, AnimDef>>, activeAnims: Map<HTMLElement, Animation> }
-
+    
+      let sceneRegistry = null;
+    
       function renderScene(sceneEl){
-        // Cancel any running animations
-        if (sceneRegistry && sceneRegistry.activeAnims){
+        if (sceneRegistry?.activeAnims){
           for (const anim of sceneRegistry.activeAnims.values()){ try{ anim.cancel(); }catch(e){} }
         }
         sceneRegistry = { tracks:new Map(), activeAnims:new Map() };
         window._xmlByName = Object.create(null);
-
         LAYERS.innerHTML = '';
-
-        // Infer base from Panel width/height; fallback to 512×288
+    
+        // Base from a Panel if present; handle any casing
         let baseW = 512, baseH = 288;
-        const panel = sceneEl.querySelector('Item[prefab="Panel"]');
+        const panel = [...sceneEl.querySelectorAll('Item')].find(n => {
+          const a = attrsOf(n);
+          return (a.prefab||a['prefab'])?.toLowerCase?.() === 'panel' || (a.type||'').toLowerCase() === 'panel';
+        });
         if (panel){
-          baseW = +(panel.getAttribute('width') || baseW);
-          baseH = +(panel.getAttribute('height') || baseH);
+          const pa = attrsOf(panel);
+          baseW = getNum(pa, 'width','w','sizex');
+          baseH = getNum(pa, 'height','h','sizey');
+          if (!baseW) baseW = 512;
+          if (!baseH) baseH = 288;
         }
-
         const sx = TARGET_W / baseW;
         const sy = TARGET_H / baseH;
-
+    
         const items = [...sceneEl.querySelectorAll('Item')];
-
+        let builtCount = 0;
+    
         for (const it of items){
-          const prefab = it.getAttribute('prefab') || 'Unknown';
-          if (prefab === 'AnimationPrefab') continue;
-
-          const name   = it.getAttribute('name')   || prefab;
-          const x = +(it.getAttribute('x') || 0);
-          const y = +(it.getAttribute('y') || 0);
-          const w = +(it.getAttribute('width')  || 0);
-          const h = +(it.getAttribute('height') || 0);
-
-          const leftPx = x * sx;
-          const topPx  = y * sy; // y-down
-          const widthPx  = w * sx;
-          const heightPx = h * sy;
-
-          const el = document.createElement(prefab === 'Text' ? 'div' : (prefab === 'Image' ? 'img' : 'div'));
+          const a = attrsOf(it);
+    
+          const prefab = (a.prefab || a.type || 'Unknown').toLowerCase();
+          if (prefab === 'animationprefab') continue;
+    
+          const name = getStr(a, 'name') || (a.prefab || 'Item');
+          const x = getNum(a, 'x');          // X or x
+          const y = getNum(a, 'y');          // Y or y  (y-down)
+          const w = getNum(a, 'width','w','sizex');
+          const h = getNum(a, 'height','h','sizey');
+    
+          const leftPx   = x * sx;
+          const topPx    = y * sy;
+          const widthPx  = (w || 0) * sx;
+          const heightPx = (h || 0) * sy;
+    
+          // Create element by prefab
+          let tag = 'div';
+          if (prefab === 'image') tag = 'img';
+          const el = document.createElement(tag);
           el.className = 'item';
           el.style.left   = toPct(leftPx, TARGET_W) + '%';
           el.style.top    = toPct(topPx,  TARGET_H) + '%';
           el.style.width  = toPct(widthPx, TARGET_W) + '%';
           el.style.height = toPct(heightPx, TARGET_H) + '%';
           el.dataset.itemName = name;
-
-          if (prefab === 'Panel'){
-            const bg = parseColor(it.getAttribute('imagecolor'));
+    
+          if (prefab === 'panel'){
+            const bg = parseColor(getStr(a, 'imagecolor','color','bg'));
             if (bg) el.style.background = bg;
             el.style.pointerEvents = 'none';
           }
-          else if (prefab === 'Image'){
-            const src = it.getAttribute('defaultimage') || '';
+          else if (prefab === 'image'){
+            const src = getStr(a, 'defaultimage','image','src');
             const img = el;
             img.decoding = 'async';
             img.loading = 'eager';
@@ -433,48 +466,51 @@
             img.style.filter = 'drop-shadow(0 4px 8px rgba(0,0,0,.35))';
             img.alt = name;
           }
-          else if (prefab === 'Text'){
+          else if (prefab === 'text'){
             el.classList.add('text');
-            const color = parseColor(it.getAttribute('textcolor')) || 'rgba(255,255,255,.95)';
-            const font  = parseFont(it.getAttribute('font'));
+            const color = parseColor(getStr(a, 'textcolor','color')) || 'rgba(255,255,255,.95)';
+            const font  = parseFont(getStr(a, 'font','fontfamily'));
+            const align = getStr(a, 'textalignment','alignment','align');
+    
             el.style.color = color;
             el.style.fontFamily = font.family + ', monospace';
             el.style.fontWeight = 700;
-            el.classList.add(...alignClasses(it.getAttribute('textalignment')).split(' '));
-            el.textContent = it.getAttribute('defaulttext') || '';
-
-            const minPx = (+(it.getAttribute('minfontsize') || 8))  * (TARGET_H / baseH);
-            const maxPx = (+(it.getAttribute('maxfontsize') || 200)) * (TARGET_H / baseH);
-            const hPct = toPct(heightPx, TARGET_H);
-            el.style.setProperty('--box-h-pct', hPct);
+            el.classList.add(...alignClasses(align).split(' '));
+            el.textContent = getStr(a, 'defaulttext','text','value','content') || '';
+    
+            const minPx = (getNum(a, 'minfontsize','minfont','minsize') || 8)  * (TARGET_H / (baseH || TARGET_H));
+            const maxPx = (getNum(a, 'maxfontsize','maxfont','maxsize') || 200) * (TARGET_H / (baseH || TARGET_H));
+            const hPct  = toPct(heightPx || 0, TARGET_H);
+            el.style.setProperty('--box-h-pct', hPct || 0.1);
             el.style.fontSize = `clamp(${minPx}px, calc(var(--box-h-pct) * 1cqh * 0.70), ${maxPx}px)`;
             el.style.textShadow = '0 0 12px rgba(0,0,0,.35)';
           }
-
+    
           LAYERS.appendChild(el);
-          window._xmlByName[name] = el;   // index by name
-
-          // Parse animations on this item
-          const animNodes = [...it.querySelectorAll(':scope > Animation')];
+          window._xmlByName[name] = el;
+          builtCount++;
+    
+          // Animations (case-insensitive)
+          const animNodes = [...it.querySelectorAll(':scope > Animation, :scope > animation')];
           if (animNodes.length){
             const trackMap = new Map();
             for (const an of animNodes){
-              const animName = (an.getAttribute('name') || 'Custom').toLowerCase();
-              const xs = parseNumList(an.getAttribute('x'));
-              const ys = parseNumList(an.getAttribute('y'));
-              const ts = parseNumList(an.getAttribute('duration')); // absolute times (s)
+              const aa = attrsOf(an);
+              const animName = (getStr(aa, 'name') || 'Custom').toLowerCase();
+              const xs = parseNumList(getStr(aa, 'x'));
+              const ys = parseNumList(getStr(aa, 'y'));
+              const ts = parseNumList(getStr(aa, 'duration','time','t'));
               const { frames, duration } = buildKeyframes(xs, ys, ts, sx, sy);
-
+    
               let easing = 'ease-in-out';
-              if (/^in$/i.test(animName)) easing = 'cubic-bezier(.2,.8,.2,1)';
+              if (/^in$/i.test(animName))  easing = 'cubic-bezier(.2,.8,.2,1)';
               if (/^out$/i.test(animName)) easing = 'cubic-bezier(.4,0,.6,1)';
-
+    
               trackMap.set(animName, { frames, duration, easing });
             }
             sceneRegistry.tracks.set(el, trackMap);
-
-            // If there's an InitialPosition, set it immediately
-            const init = trackMap.get('initialposition');
+    
+            const init = sceneRegistry.tracks.get(el)?.get('initialposition');
             if (init && init.frames.length){
               const last = init.frames[init.frames.length - 1];
               if (last.left) el.style.left = last.left;
@@ -482,79 +518,85 @@
             }
           }
         }
+    
+        if (!builtCount){
+          console.warn('[XML] Scene rendered 0 items. Likely attribute casing mismatch in source XML. Check element <Item> attributes.');
+        } else {
+          console.info('[XML] Rendered items:', builtCount);
+        }
+        return builtCount;
       }
-
+    
       function play(animName){
         if (!sceneRegistry) return;
         const key = (animName || 'In').toLowerCase();
-
-        // Cancel running animations
         for (const [el, running] of sceneRegistry.activeAnims){
           try { running.cancel(); } catch(e){}
           sceneRegistry.activeAnims.delete(el);
         }
-
         for (const [el, trackMap] of sceneRegistry.tracks){
           const def = trackMap.get(key);
           if (!def || !def.frames.length || def.duration <= 0) continue;
-
-          const anim = el.animate(def.frames, {
-            duration: def.duration,
-            fill: 'forwards',
-            easing: def.easing
-          });
+          const anim = el.animate(def.frames, { duration: def.duration, fill: 'forwards', easing: def.easing });
           sceneRegistry.activeAnims.set(el, anim);
         }
       }
-
-      // Expose helpers (always available)
+    
+      // ---- scene lookup that works with name/scenename (any casing) -----------
+      function findSceneByName(dom, wanted){
+        if (!wanted) return dom.querySelector('Scene') || dom.querySelector('scene') || null;
+        const scenes = dom.querySelectorAll('Scene, scene');
+        wanted = wanted.toLowerCase();
+        for (const sc of scenes){
+          const a = attrsOf(sc);
+          const val = (a.scenename || a.name || '').toLowerCase();
+          if (val === wanted) return sc;
+        }
+        return null;
+      }
+    
+      // expose helpers (always available)
       window.playXML = play;
       window.setXMLScene = (name) => {
         if (!window._xmlDOM) return;
-        const next = window._xmlDOM.querySelector(
-          `Scene[scenename="${CSS.escape(name)}"], Scene[name="${CSS.escape(name)}"]`
-        ) || window._xmlDOM.querySelector('Scene');
-        if (next){
-          renderScene(next);
-          play('InitialPosition');
-          setTimeout(() => play('In'), 10);
-          document.body.classList.add('xmlMode');
-        }
+        const next = findSceneByName(window._xmlDOM, name) || findSceneByName(window._xmlDOM, null);
+        if (!next) return;
+        const count = renderScene(next);
+        play('InitialPosition');
+        setTimeout(() => play('In'), 10);
+        if (count > 0) document.body.classList.add('xmlMode');
       };
-
+    
       window.loadXML = async (url, scene, autoplay) => {
         console.log('[WS][xml] loading', url);
         let res;
         try { res = await fetch(url, {cache:'no-store'}); }
         catch(e){ console.error('[WS][xml] fetch failed:', e); return; }
         if (!res.ok){ console.error('[WS][xml] HTTP', res.status, res.statusText); return; }
-
+    
         const xmlText = await res.text();
         const dom = new DOMParser().parseFromString(xmlText, 'text/xml');
         const parseErr = dom.querySelector('parsererror');
         if (parseErr){ console.error('[WS][xml] parse error:', parseErr.textContent?.trim()); return; }
         window._xmlDOM = dom;
-
-        const target = scene
-          ? dom.querySelector(`Scene[scenename="${CSS.escape(scene)}"], Scene[name="${CSS.escape(scene)}"]`) || dom.querySelector('Scene')
-          : dom.querySelector('Scene');
+    
+        const target = findSceneByName(dom, scene) || findSceneByName(dom, null);
         if (!target){ console.warn('[WS][xml] no <Scene>'); return; }
-
-        renderScene(target);
+    
+        const count = renderScene(target);
         play('InitialPosition');
         setTimeout(() => play(autoplay || 'In'), 10);
-
-        // Enter xml mode only after success
-        document.body.classList.add('xmlMode');
+    
+        if (count > 0) document.body.classList.add('xmlMode');
       };
-
+    
       // Auto-load if ?xml= is present
       const xmlUrl = params.get('xml');
       const initialScene = params.get('scene') || null;
       const autoPlayName = (params.get('autoplay') || 'In');
       if (xmlUrl) { window.loadXML(xmlUrl, initialScene, autoPlayName); }
     })();
-
+    
     /* ================= Utilities ================= */
     const qs = (s) => document.querySelector(s);
     const pad2 = (n) => String(n).padStart(2, '0');
