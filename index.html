@@ -275,174 +275,134 @@
          - {type:'scene', name, autoplay}
          - {type:'anim',  name}
     ================================================================= */
-
-    (function(){
-      const qs = (s) => document.querySelector(s);
-      const params = new URLSearchParams(location.search);
-
-      // === XML engine hooks (provided below) ===
-      const hasEngine = () => typeof window.setXMLScene === 'function' &&
-                               typeof window.playXML === 'function' &&
-                               window._xmlByName;
-
-      // Expose loader utility
-      async function loadXML(url, scene, autoplay){
-        const res = await fetch(url, {cache:'no-store'});
-        const xmlText = await res.text();
-        const dom = new DOMParser().parseFromString(xmlText, 'text/xml');
-        window._xmlDOM = dom;
-
-        // Set initial scene
-        const first = dom.querySelector('Scene');
-        if (!first) return;
-
-        const target = scene
-          ? (dom.querySelector(`Scene[scenename="${CSS.escape(scene)}"]`) || first)
-          : first;
-
-        const name = target.getAttribute('scenename') || target.getAttribute('name') || '';
-        window.setXMLScene(name);
-
-        window.playXML('InitialPosition');
-        setTimeout(() => window.playXML(autoplay || 'In'), 10);
-      }
-      window.loadXML = loadXML;
-
-      // WebSocket URL
-      const defaultWS = (location.protocol === 'https:' ? 'wss://' : 'ws://') + location.host + '/ws';
-      const wsUrl = params.get('ws') || defaultWS;
-
-      // State refs
-      let skewMs = 0;
-      const gameClockEl = qs('#gameClock');
-      const homeScoreEl = qs('#homeScore');
-      const awayScoreEl = qs('#awayScore');
-
-      // Map XML item names to elements (engine fills this)
-      const xml = () => window._xmlByName || {};
-
-      // Apply helpers (update DOM + XML scene if present)
-      function applyTeams(t){
-        // built-ins
-        if (t.homeName !== undefined) qs('#homeName').textContent = t.homeName || '';
-        if (t.awayName !== undefined) qs('#awayName').textContent = t.awayName || '';
-        if (t.homeLogo){ const el = qs('#homeLogo'); el.src = t.homeLogo; el.style.visibility='visible'; }
-        if (t.awayLogo){ const el = qs('#awayLogo'); el.src = t.awayLogo; el.style.visibility='visible'; }
-        if (t.sponsor ){ const el = qs('#sponsorLogo'); el.src = t.sponsor;  el.style.visibility='visible'; }
-
-        // XML scene bindings
-        if (hasEngine()){
-          if (t.homeLogo && xml().ClubLogo  && xml().ClubLogo.tagName === 'IMG')  xml().ClubLogo.src  = t.homeLogo;
-          if (t.awayLogo && xml().ClubLogo2 && xml().ClubLogo2.tagName === 'IMG') xml().ClubLogo2.src = t.awayLogo;
-          if (t.sponsor  && xml().SponsorLogo && xml().SponsorLogo.tagName === 'IMG') xml().SponsorLogo.src = t.sponsor;
-
-          if (xml().HomeTeam) xml().HomeTeam.textContent = t.homeName ?? '';
-          if (xml().AwayTeam) xml().AwayTeam.textContent = t.awayName ?? '';
-        }
-      }
-
-      function applyScore(s){
-        if (typeof s.home === 'number') homeScoreEl.textContent = String(s.home);
-        if (typeof s.away === 'number') awayScoreEl.textContent = String(s.away);
-
-        if (hasEngine()){
-          if (xml().HomeScore) xml().HomeScore.textContent = String(s.home ?? xml().HomeScore.textContent || '0');
-          if (xml().AwayScore) xml().AwayScore.textContent = String(s.away ?? xml().AwayScore.textContent || '0');
-        }
-      }
-
-      function applyClock(msg){
-        if (typeof msg.serverNowMs === 'number') skewMs = Date.now() - msg.serverNowMs;
-        window.net = {
-          running: !!msg.running,
-          startEpochMs: msg.startEpochMs || 0,
-          carryMs: msg.carryMs || 0
-        };
-        // Game time text for XML will be updated by the RAF loop too (see below).
-      }
-
-      function getType(msg){ return (msg && (msg.type || msg.cmd || msg.action) || '').toLowerCase(); }
-
-      let ws;
-      function connectWS(){
-        try { ws && ws.close(); } catch(_){}
-        ws = new WebSocket(wsUrl);
-
-        ws.addEventListener('open', () => {
-          const hideControls = (params.get('clean') === '1') || Boolean(wsUrl);
-          if (hideControls) { const c = qs('#controls'); if (c) c.style.display = 'none'; }
-          ws.send(JSON.stringify({ type:'hello', role:'viewer', version:'xml-bind-1.1' }));
+      
+      // --- WebSocket client with status + logs ---
+      (function(){
+        const qs = (s) => document.querySelector(s);
+        const params = __params; // reuse the early-parsed params
+      
+        // Create a tiny status dot
+        const dot = document.createElement('div');
+        Object.assign(dot.style, {
+          position:'absolute', right:'10px', bottom:'10px', width:'10px', height:'10px',
+          borderRadius:'50%', background:'#888', boxShadow:'0 0 8px rgba(0,0,0,.4)', zIndex:9999
         });
-
-        ws.addEventListener('message', async (evt) => {
-          let msg = {};
-          try { msg = JSON.parse(evt.data); } catch(_){ return; }
-          const t = getType(msg);
-
-          switch (t){
-            case 'ping': {
-              ws.send(JSON.stringify({ type:'pong', id: msg.id ?? null, now: Date.now() }));
-              break;
-            }
-            case 'state': {
-              if (typeof msg.serverNowMs === 'number') skewMs = Date.now() - msg.serverNowMs;
+        document.body.appendChild(dot);
+        const setDot = (c)=>dot.style.background=c;
+      
+        // Choose WS URL
+        const defaultWS = (location.protocol === 'https:' ? 'wss://' : 'ws://') + location.host + '/ws';
+        const wsUrl = params.get('ws') || defaultWS;
+      
+        // If you’re on https://ykottelat.github.io you MUST pass ?ws=wss://<yourapp>.azurewebsites.net/ws
+        console.info('[WS] target =', wsUrl);
+      
+        let ws, tries = 0, timer;
+        function connectWS(){
+          clearTimeout(timer);
+          tries++;
+          setDot('#888');
+          console.info(`[WS] connecting (attempt ${tries})…`);
+      
+          try { if (ws) ws.close(); } catch(_){}
+          ws = new WebSocket(wsUrl);
+      
+          ws.addEventListener('open', () => {
+            setDot('#0ad10a');
+            console.info('[WS] open');
+            // Also hide controls on open (in case clean=1 wasn’t used)
+            const c = qs('#controls');
+            if (c && (params.get('clean') === '1' || params.has('ws'))) c.style.display = 'none';
+            ws.send(JSON.stringify({ type:'hello', role:'viewer', version:'xml-bind-1.1' }));
+          });
+      
+          ws.addEventListener('message', async (evt) => {
+            let msg;
+            try { msg = JSON.parse(evt.data); } catch(e){ return; }
+            const t = (msg.type || msg.cmd || msg.action || '').toLowerCase();
+      
+            // ---- handle server messages (unchanged logic) ----
+            if (typeof msg.serverNowMs === 'number') window.__skewMs = Date.now() - msg.serverNowMs;
+      
+            if (t === 'state'){
               if (msg.teams) applyTeams(msg.teams);
               if (msg.score) applyScore(msg.score);
               if (msg.clock) applyClock(msg.clock);
-              if (msg.xml && msg.xml.url && hasEngine()){
-                try { await loadXML(msg.xml.url, msg.xml.scene, msg.xml.autoplay); } catch(e){ console.warn(e); }
+              if (msg.xml && msg.xml.url && typeof window.loadXML === 'function'){
+                try { await window.loadXML(msg.xml.url, msg.xml.scene, msg.xml.autoplay); } catch(e){ console.warn(e); }
               }
-              if (msg.scene && hasEngine()){
+              if (msg.scene && typeof window.setXMLScene === 'function'){
                 window.setXMLScene(msg.scene);
-                if (msg.autoplay) window.playXML(msg.autoplay);
+                if (msg.autoplay && typeof window.playXML === 'function') window.playXML(msg.autoplay);
               }
-              break;
+              return;
             }
-            case 'teams': applyTeams(msg); break;
-            case 'score': applyScore(msg); break;
-            case 'clock': applyClock(msg); break;
-
-            case 'xml': {
-              if (!hasEngine()) break;
-              if (msg.url){
-                try { await loadXML(msg.url, msg.scene, msg.autoplay); } catch(e){ console.warn(e); }
-              } else if (msg.xmlText){
-                try {
-                  const dom = new DOMParser().parseFromString(msg.xmlText, 'text/xml');
-                  window._xmlDOM = dom;
-                  const first = dom.querySelector('Scene');
-                  if (first){
-                    const name = msg.scene || first.getAttribute('scenename') || '';
-                    window.setXMLScene(name);
-                    window.playXML('InitialPosition');
-                    setTimeout(() => window.playXML(msg.autoplay || 'In'), 10);
-                  }
-                } catch(e){ console.warn(e); }
+      
+            if (t === 'teams') { applyTeams(msg); return; }
+            if (t === 'score') { applyScore(msg); return; }
+            if (t === 'clock') { applyClock(msg); return; }
+      
+            if (t === 'xml' && typeof window.loadXML === 'function'){
+              if (msg.url) {
+                try { await window.loadXML(msg.url, msg.scene, msg.autoplay); } catch(e){ console.warn(e); }
               }
-              break;
+              return;
             }
-
-            case 'scene': {
-              if (!hasEngine()) break;
+            if (t === 'scene' && typeof window.setXMLScene === 'function'){
               window.setXMLScene(msg.name || msg.scene || '');
-              if (msg.autoplay) window.playXML(msg.autoplay);
-              break;
+              if (msg.autoplay && typeof window.playXML === 'function') window.playXML(msg.autoplay);
+              return;
             }
-
-            case 'anim': {
-              if (!hasEngine()) break;
+            if (t === 'anim' && typeof window.playXML === 'function'){
               window.playXML(msg.name || 'In');
-              break;
+              return;
             }
+          });
+      
+          ws.addEventListener('close', (e) => {
+            setDot('#e53935');
+            console.warn('[WS] close', e.code, e.reason || '');
+            // retry
+            timer = setTimeout(connectWS, Math.min(8000, 500 * tries));
+          });
+      
+          ws.addEventListener('error', (e) => {
+            setDot('#e53935');
+            console.error('[WS] error', e);
+            try { ws.close(); } catch(_){}
+          });
+        }
+      
+        // helpers used by the message handler (same as your current ones)
+        let __skewMs = 0;
+        function applyTeams(t){
+          if (t.homeName !== undefined) qs('#homeName').textContent = t.homeName || '';
+          if (t.awayName !== undefined) qs('#awayName').textContent = t.awayName || '';
+          if (t.homeLogo){ const el = qs('#homeLogo'); el.src = t.homeLogo; el.style.visibility='visible'; }
+          if (t.awayLogo){ const el = qs('#awayLogo'); el.src = t.awayLogo; el.style.visibility='visible'; }
+          if (t.sponsor ){ const el = qs('#sponsorLogo'); el.src = t.sponsor;  el.style.visibility='visible'; }
+          // XML mirrors if present
+          const by = window._xmlByName || {};
+          if (by.ClubLogo && t.homeLogo)  by.ClubLogo.src  = t.homeLogo;
+          if (by.ClubLogo2 && t.awayLogo) by.ClubLogo2.src = t.awayLogo;
+          if (by.SponsorLogo && t.sponsor) by.SponsorLogo.src = t.sponsor;
+          if (by.HomeTeam) by.HomeTeam.textContent = t.homeName ?? '';
+          if (by.AwayTeam) by.AwayTeam.textContent = t.awayName ?? '';
+        }
+        function applyScore(s){
+          if (typeof s.home === 'number') qs('#homeScore').textContent = String(s.home);
+          if (typeof s.away === 'number') qs('#awayScore').textContent = String(s.away);
+          const by = window._xmlByName || {};
+          if (by.HomeScore && typeof s.home === 'number') by.HomeScore.textContent = String(s.home);
+          if (by.AwayScore && typeof s.away === 'number') by.AwayScore.textContent = String(s.away);
           }
-        });
+        function applyClock(c){
+          if (typeof c.serverNowMs === 'number') __skewMs = Date.now() - c.serverNowMs;
+          window.net = { running: !!c.running, startEpochMs: c.startEpochMs || 0, carryMs: c.carryMs || 0 };
+        }
 
-        ws.addEventListener('close', () => setTimeout(connectWS, 800));
-        ws.addEventListener('error',  () => { try{ ws.close(); }catch(_){ } });
-      }
-
-      connectWS();
-
+        connectWS();
+      })();
       // ===== Utilities used by RAF/TOD =====
       const pad2 = (n) => String(n).padStart(2, '0');
       const computeDisplayFromClock = (clock) => {
