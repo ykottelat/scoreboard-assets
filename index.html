@@ -289,7 +289,7 @@
       body.xmlMode .middle,
       body.xmlMode .labels,
       body.xmlMode .bottom,
-      body.xmlMode. controls { display: none ! important; }
+      body.xmlMode .controls { display: none !important; }
     }
   </style>
 </head>
@@ -334,7 +334,10 @@
   </div>
 
   <script>
-	  /* ================== Server Bridge (WebSocket) ==================
+  	// --- shared globals for clock sync ---
+  	window.net = null;        // { running, startEpochMs, carryMs }
+  	window.skewMs = 0;        // client_now - server_now
+	   /* ================== Server Bridge (WebSocket) ==================
 	   Works with your existing server. Message types supported:
 		 - {type:'state', ...}  // bulk update (clock/score/teams/xml/scene)
 		 - {type:'teams', homeName, awayName, homeLogo, awayLogo, sponsor}
@@ -383,8 +386,8 @@
 	  const defaultWS = (location.protocol === 'https:' ? 'wss://' : 'ws://') + location.host + '/ws';
 	  const wsUrl = params.get('ws') || defaultWS;
 
-	  // Time skew handling (for clock sync)
-	  let skewMs = 0;
+	  // Time skew handling (for clock sync) – write to globals
+	  window.skewMs = window.skewMs || 0;
 	  const gameClockEl = qs('#gameClock');
 	  const homeScoreEl = qs('#homeScore');
 	  const awayScoreEl = qs('#awayScore');
@@ -403,7 +406,7 @@
 	  }
 	  // Mirror your existing clock format
 	  function applyClock(msg){
-		if (typeof msg.serverNowMs === 'number') skewMs = Date.now() - msg.serverNowMs;
+		if (typeof msg.serverNowMs === 'number') window.skewMs = Date.now() - msg.serverNowMs;
 		// The animation of the numeric clock itself is already handled by your page's RAF loop.
 		// We just store the authoritative data in a shared 'net' object like before.
 		window.net = {
@@ -795,21 +798,24 @@
     let local = { running:false, startTime:0, carry:0 };
 
     // ===== Network Clock (authoritative when present)
-    let net = null; // { running, startEpochMs, carryMs }
-    let skewMs = 0; // client_now - server_now
+//    let net = null; // { running, startEpochMs, carryMs }
+//    let skewMs = 0; // client_now - server_now
+	// use the globals written by the WS bridge:
+	// window.net, window.skewMs
 
     const computeDisplayFromClock = (clock) => {
-      const nowMs = Date.now() - (net ? skewMs : 0);
+      const nowMs = Date.now() - (window.net ? window.skewMs : 0);
       const elapsed = (clock.running ? (nowMs - clock.startEpochMs) : 0) + (clock.carryMs || 0);
       const total = Math.max(0, Math.floor(elapsed / 1000));
       return `${pad2(Math.floor(total/60))}:${pad2(total%60)}`;
     };
 
     const tickGameClock = () => {
-      if (net) {
+      if if (window.net) {
         gameClockEl.textContent = computeDisplayFromClock({
-          running: net.running, startEpochMs: net.startEpochMs, carryMs: net.carryMs
-        });
+		running: window.net.running,
+        startEpochMs: window.net.startEpochMs,
+        carryMs: window.net.carryMs        });
       } else {
         const now = Date.now();
         const elapsed = (local.running ? (now - local.startTime) : 0) + local.carry;
@@ -904,63 +910,6 @@
       );
       el.style.visibility = 'visible';
     }
-
-    // ===== WebSocket sync (read-only client)
-    const wsUrl = params.get('ws');
-    let ws;
-    function connectWS(){
-      if (!wsUrl) return;
-
-      const hideControls = (params.get('clean') === '1') || Boolean(wsUrl);
-      if (hideControls) qs('#controls').style.display = 'none';
-
-      ws = new WebSocket(wsUrl);
-      ws.addEventListener('open', () => {
-        ws.send(JSON.stringify({ type:'hello', role:'viewer' }));
-      });
-      ws.addEventListener('message', (evt) => {
-        try { handleServerMessage(JSON.parse(evt.data)); } catch(e){}
-      });
-      ws.addEventListener('close', () => setTimeout(connectWS, 1000));
-      ws.addEventListener('error', () => { try{ ws.close(); }catch(_){} });
-    }
-
-    function handleServerMessage(msg){
-      switch (msg.type){
-        case 'state':{
-          if (typeof msg.serverNowMs === 'number') skewMs = Date.now() - msg.serverNowMs;
-
-          if (msg.teams){
-            const t = msg.teams;
-            if (t.homeName !== undefined) qs('#homeName').textContent = t.homeName || '';
-            if (t.awayName !== undefined) qs('#awayName').textContent = t.awayName || '';
-            if (t.homeLogo){ const el = qs('#homeLogo'); el.src = t.homeLogo; el.style.visibility='visible'; }
-            if (t.awayLogo){ const el = qs('#awayLogo'); el.src = t.awayLogo; el.style.visibility='visible'; }
-            if (t.sponsor ){ const el = qs('#sponsorLogo'); el.src = t.sponsor;  el.style.visibility='visible'; }
-          }
-          if (msg.score){
-            if (typeof msg.score.home === 'number') homeScoreEl.textContent = String(msg.score.home);
-            if (typeof msg.score.away === 'number') awayScoreEl.textContent = String(msg.score.away);
-          }
-          if (msg.clock){
-            net = { running:!!msg.clock.running, startEpochMs:msg.clock.startEpochMs||0, carryMs:msg.clock.carryMs||0 };
-          }
-          break;
-        }
-        case 'score':{
-          if (typeof msg.home === 'number') homeScoreEl.textContent = String(msg.home);
-          if (typeof msg.away === 'number') awayScoreEl.textContent = String(msg.away);
-          break;
-        }
-        case 'clock':{
-          net = { running:!!msg.running, startEpochMs:msg.startEpochMs||0, carryMs:msg.carryMs||0 };
-          if (typeof msg.serverNowMs === 'number') skewMs = Date.now() - msg.serverNowMs;
-          break;
-        }
-      }
-    }
-
-    connectWS();
   </script>
 </body>
 </html>
