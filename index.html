@@ -346,10 +346,33 @@
       const params = __params;
       const LAYERS = document.getElementById('xmlLayers');
       const TARGET_W = 1024, TARGET_H = 576;
-    
+      const DIAG = __params.has('diag');
+      
       // ---- helpers ---------------------------------------------------------
       const toPct = (px, dim) => (px / dim) * 100;
-    
+
+      function tint(el, prefab){
+        if (!DIAG) return;
+        const tint = {
+          panel:'rgba(255,255,255,.03)',
+          image:'rgba(0,0,0,.05)',
+          text:'rgba(255,255,0,.08)'
+        }[prefab] || 'transparent';
+        if (!el.style.background) el.style.background = tint;
+        el.style.outline = '1px dashed rgba(255,255,255,.3)';
+      }
+      
+      function label(el, name){
+        if (!DIAG) return;
+        const tag = document.createElement('div');
+        tag.textContent = name;
+        tag.style.cssText =
+          'position:absolute;left:0;top:0;font:10px/1.2 monospace;' +
+          'background:rgba(0,0,0,.6);color:#fff;padding:2px 4px;' +
+          'border-bottom-right-radius:6px;pointer-events:none;';
+        el.appendChild(tag);
+      }
+      
       // Build a lower-cased attribute map for easy, case-insensitive lookups
       function attrsOf(el){
         const out = Object.create(null);
