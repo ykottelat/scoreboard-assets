@@ -334,193 +334,275 @@
   </div>
 
   <script>
-    /* ================= XML Layer Engine (targets 1024×576) =================
-     Usage:
-       - Put your XML next to this HTML (e.g. Football.xml)
-       - Open with:  index.html?xml=Football.xml&scene=GameClock
-         (scene is optional; first scene will be used if omitted)
-     Notes:
-       - The XML uses a 512×288 coordinate space; we scale everything ×2 to 1024×576.
-       - Y grows downward in CSS. In the XML, typical values are negative for "down",
-         so we convert with: top = (-y) * scaleY.
-    =========================================================================*/
+	/* ================= XML Layer Engine with Animations (targets 1024×576) ================
+	   Usage:
+		 - Put Football.xml alongside this file.
+		 - Open:  index.html?xml=Football.xml&scene=GameClock&autoplay=In
+		   (scene optional; autoplay can be InitialPosition|In|Next|Out; default "In")
+		 - At runtime, you can switch/trigger:
+			 setXMLScene('TeamPresentation')
+			 playXML('Next')   // or 'In' | 'Out' | 'InitialPosition'
+	   Notes:
+		 - XML coordinate space is usually 512×288; we render at 1024×576 (×2).
+		 - XML keyframes use absolute times in seconds in the 'duration' attribute.
+		   Example: duration="0;1;2" means keyframes at t=0s, t=1s, t=2s.
+	======================================================================================*/
 
-    (function(){
-      const params = new URLSearchParams(location.search);
-      const xmlUrl = params.get('xml');
-      const initialScene = params.get('scene') || null;
+	(function(){
+	  const params = new URLSearchParams(location.search);
+	  const xmlUrl = params.get('xml');
+	  const initialScene = params.get('scene') || null;
+	  const autoPlayName = (params.get('autoplay') || 'In');
 
-      if (!xmlUrl) return;             // only activate if ?xml=... is present
-      document.body.classList.add('xmlMode');
+	  if (!xmlUrl) return;                 // only activate if ?xml=... is present
+	  document.body.classList.add('xmlMode');
 
-      const LAYERS = document.getElementById('xmlLayers');
-      const BOARD  = document.getElementById('board');
+	  const LAYERS = document.getElementById('xmlLayers');
+	  const BOARD  = document.getElementById('board');
 
-      // Target design space (double the XML's 512×288)
-      const TARGET_W = 1024, TARGET_H = 576;
+	  // Target design space (double the XML's base, typically 512×288)
+	  const TARGET_W = 1024, TARGET_H = 576;
 
-      // Parse "r;g;b;a" → rgba(r,g,b,a/255)
-      const parseColor = (s) => {
-        if (!s) return null;
-        const [r,g,b,a] = s.split(';').map(n => +n || 0);
-        return `rgba(${r},${g},${b},${(a??255)/255})`;
-      };
+	  // Utilities
+	  const parseColor = (s) => {
+		if (!s) return null;
+		const [r,g,b,a] = s.split(';').map(n => +n || 0);
+		return `rgba(${r},${g},${b},${(a??255)/255})`;
+	  };
 
-      // Parse "Family;Size" → {family, sizePx}
-      const parseFont = (s) => {
-        if (!s) return { family: `'Droid Sans Mono', monospace`, sizePx: 24 };
-        const [family, sz] = s.split(';');
-        return { family: family || `'Droid Sans Mono', monospace`, sizePx: +(sz||24) };
-      };
+	  const parseFont = (s) => {
+		if (!s) return { family: `'Droid Sans Mono', monospace`, sizePx: 24 };
+		const [family, sz] = s.split(';');
+		return { family: family || `'Droid Sans Mono', monospace`, sizePx: +(sz||24) };
+	  };
 
-      // Map XML textalignment to our flex helpers
-      const alignClasses = (align) => {
-        const a = (align || '').toLowerCase();
-        const h = a.includes('left') ? 'align-left' : a.includes('right') ? 'align-right' : 'align-center';
-        const v = a.includes('top') ? 'valign-top' : a.includes('bottom') ? 'valign-bottom' : 'valign-middle';
-        return `${h} ${v}`;
-      };
+	  const alignClasses = (align) => {
+		const a = (align || '').toLowerCase();
+		const h = a.includes('left') ? 'align-left' : a.includes('right') ? 'align-right' : 'align-center';
+		const v = a.includes('top') ? 'valign-top' : a.includes('bottom') ? 'valign-bottom' : 'valign-middle';
+		return `${h} ${v}`;
+	  };
 
-      // Convert absolute px in TARGET space to % so it scales with the board
-      const toPct = (px, dim) => (px / dim) * 100;
+	  const toPct = (px, dim) => (px / dim) * 100;
 
-      // Render a given <Scene>
-      function renderScene(sceneEl){
-        LAYERS.innerHTML = ''; // clear old scene
+	  // Keep per-scene animation registry
+	  let sceneRegistry = null; // { elements: Set<HTMLElement>, tracks: Map<HTMLElement, Map<string, AnimDef>>, activeAnims: Map<HTMLElement, Animation> }
 
-        // Try to infer the XML's base canvas size from a Panel, else fall back to 512×288
-        let baseW = 512, baseH = 288;
-        const panel = sceneEl.querySelector('Item[prefab="Panel"]');
-        if (panel){
-          baseW = +(panel.getAttribute('width') || baseW);
-          baseH = +(panel.getAttribute('height') || baseH);
-        }
+	  // Build a keyframe list for Web Animations API from XML arrays
+	  function buildKeyframes(xList, yList, tList, sx, sy){
+		const n = Math.min(xList.length, yList.length, tList.length);
+		if (n === 0) return { frames: [], duration: 0 };
 
-        const sx = TARGET_W / baseW;
-        const sy = TARGET_H / baseH;
+		const total = tList[n-1] || 0.0001; // avoid 0
+		const frames = [];
+		for (let i = 0; i < n; i++){
+		  const leftPx = xList[i] * sx;
+		  const topPx  = (-yList[i]) * sy;             // XML "down" → CSS positive down
+		  frames.push({
+			left:  toPct(leftPx, TARGET_W) + '%',
+			top:   toPct(topPx,  TARGET_H) + '%',
+			offset: (total ? (tList[i] / total) : (i === n-1 ? 1 : 0))
+		  });
+		}
+		// Ensure last frame has offset 1
+		frames[frames.length-1].offset = 1;
+		return { frames, duration: total * 1000 };
+	  }
 
-        const items = [...sceneEl.querySelectorAll('Item')];
+	  function parseNumList(s){
+		if (!s) return [];
+		return s.split(';').map(v => +v);
+	  }
 
-        for (const it of items){
-          const prefab = it.getAttribute('prefab') || 'Unknown';
-          const name   = it.getAttribute('name')   || prefab;
+	  function renderScene(sceneEl){
+		// Cancel any running animations from previous scene
+		if (sceneRegistry && sceneRegistry.activeAnims){
+		  for (const anim of sceneRegistry.activeAnims.values()){ try{ anim.cancel(); }catch(e){} }
+		}
+		sceneRegistry = { elements:new Set(), tracks:new Map(), activeAnims:new Map() };
 
-          // XML coords: x to the right; y is typically negative for "down".
-          const x = +(it.getAttribute('x') || 0);
-          const y = +(it.getAttribute('y') || 0);
-          const w = +(it.getAttribute('width')  || 0);
-          const h = +(it.getAttribute('height') || 0);
+		LAYERS.innerHTML = '';
 
-          const leftPx = x * sx;
-          const topPx  = (-y) * sy;     // key inversion: XML "down" → CSS positive down
-          const widthPx  = w * sx;
-          const heightPx = h * sy;
+		// Infer base from Panel width/height; fall back to 512×288
+		let baseW = 512, baseH = 288;
+		const panel = sceneEl.querySelector('Item[prefab="Panel"]');
+		if (panel){
+		  baseW = +(panel.getAttribute('width') || baseW);
+		  baseH = +(panel.getAttribute('height') || baseH);
+		}
 
-          // Common wrapper
-          const el = document.createElement(prefab === 'Text' ? 'div' : (prefab === 'Image' ? 'img' : 'div'));
-          el.className = 'item';
+		const sx = TARGET_W / baseW;
+		const sy = TARGET_H / baseH;
 
-          // Percent-based sizing so it scales with the board
-          el.style.left   = toPct(leftPx, TARGET_W) + '%';
-          el.style.top    = toPct(topPx,  TARGET_H) + '%';
-          el.style.width  = toPct(widthPx, TARGET_W) + '%';
-          el.style.height = toPct(heightPx, TARGET_H) + '%';
+		const items = [...sceneEl.querySelectorAll('Item')];
 
-          // Per prefab behavior
-          if (prefab === 'Panel'){
-            // Background color fill
-            const bg = parseColor(it.getAttribute('imagecolor'));
-            if (bg) el.style.background = bg;
-            el.style.borderRadius = '0px';
-            el.style.pointerEvents = 'none';
-          }
-          else if (prefab === 'Image'){
-            const src = it.getAttribute('defaultimage') || '';
-            const img = el; // already <img>
-            img.decoding = 'async';
-            img.loading = 'eager';
-            if (src) img.src = src;
-            img.style.objectFit = 'contain';
-            img.style.filter = 'drop-shadow(0 4px 8px rgba(0,0,0,.35))';
-            img.alt = name;
-            // If you want XML images to be interactable, remove pointer-events none below
-          }
-          else if (prefab === 'Text'){
-            el.classList.add('text');
+		for (const it of items){
+		  const prefab = it.getAttribute('prefab') || 'Unknown';
+		  if (prefab === 'AnimationPrefab') continue; // placeholder in the XML
 
-            // Colors & font
-            const color = parseColor(it.getAttribute('textcolor')) || 'rgba(255,255,255,.95)';
-            const font  = parseFont(it.getAttribute('font'));
-            el.style.color = color;
-            el.style.fontFamily = font.family + ', monospace';
-            el.style.fontWeight = 700;
+		  const name   = it.getAttribute('name')   || prefab;
+		  const x = +(it.getAttribute('x') || 0);
+		  const y = +(it.getAttribute('y') || 0);
+		  const w = +(it.getAttribute('width')  || 0);
+		  const h = +(it.getAttribute('height') || 0);
 
-            // Alignment
-            el.classList.add(...alignClasses(it.getAttribute('textalignment')).split(' '));
+		  const leftPx = x * sx;
+		  const topPx  = (-y) * sy;
+		  const widthPx  = w * sx;
+		  const heightPx = h * sy;
 
-            // Content
-            el.textContent = it.getAttribute('defaulttext') || '';
+		  const el = document.createElement(prefab === 'Text' ? 'div' : (prefab === 'Image' ? 'img' : 'div'));
+		  el.className = 'item';
+		  el.style.left   = toPct(leftPx, TARGET_W) + '%';
+		  el.style.top    = toPct(topPx,  TARGET_H) + '%';
+		  el.style.width  = toPct(widthPx, TARGET_W) + '%';
+		  el.style.height = toPct(heightPx, TARGET_H) + '%';
+		  el.dataset.itemName = name;
 
-            // Respect min/max font sizes from XML (scaled to 1024×576),
-            // and auto-fit roughly to the item box height.
-            const minPx = (+(it.getAttribute('minfontsize') || 8))  * (TARGET_H / baseH);
-            const maxPx = (+(it.getAttribute('maxfontsize') || 200)) * (TARGET_H / baseH);
+		  if (prefab === 'Panel'){
+			const bg = parseColor(it.getAttribute('imagecolor'));
+			if (bg) el.style.background = bg;
+			el.style.pointerEvents = 'none';
+		  }
+		  else if (prefab === 'Image'){
+			const src = it.getAttribute('defaultimage') || '';
+			const img = el;
+			img.decoding = 'async';
+			img.loading = 'eager';
+			if (src) img.src = src;
+			img.style.objectFit = 'contain';
+			img.style.filter = 'drop-shadow(0 4px 8px rgba(0,0,0,.35))';
+			img.alt = name;
+		  }
+		  else if (prefab === 'Text'){
+			el.classList.add('text');
+			const color = parseColor(it.getAttribute('textcolor')) || 'rgba(255,255,255,.95)';
+			const font  = parseFont(it.getAttribute('font'));
+			el.style.color = color;
+			el.style.fontFamily = font.family + ', monospace';
+			el.style.fontWeight = 700;
+			el.classList.add(...alignClasses(it.getAttribute('textalignment')).split(' '));
+			el.textContent = it.getAttribute('defaulttext') || '';
 
-            // Use container query height to scale with board (height% * 1cqh)
-            const hPct = toPct(heightPx, TARGET_H);
-            el.style.setProperty('--box-h-pct', hPct);
-            el.style.fontSize = `clamp(${minPx}px, calc(var(--box-h-pct) * 1cqh * 0.70), ${maxPx}px)`;
-            el.style.textShadow = '0 0 12px rgba(0,0,0,.35)';
-          }
-          else {
-            // Fallback: show a faint box with the prefab name (you can extend for Video, etc.)
-            el.style.outline = '1px dashed rgba(255,255,255,.25)';
-            el.style.color = 'rgba(255,255,255,.7)';
-            el.style.display = 'flex';
-            el.style.alignItems = 'center';
-            el.style.justifyContent = 'center';
-            el.textContent = name || prefab;
-          }
+			const minPx = (+(it.getAttribute('minfontsize') || 8))  * (TARGET_H / baseH);
+			const maxPx = (+(it.getAttribute('maxfontsize') || 200)) * (TARGET_H / baseH);
+			const hPct = toPct(heightPx, TARGET_H);
+			el.style.setProperty('--box-h-pct', hPct);
+			el.style.fontSize = `clamp(${minPx}px, calc(var(--box-h-pct) * 1cqh * 0.70), ${maxPx}px)`;
+			el.style.textShadow = '0 0 12px rgba(0,0,0,.35)';
+		  } else {
+			el.style.outline = '1px dashed rgba(255,255,255,.25)';
+			el.style.color = 'rgba(255,255,255,.7)';
+			el.style.display = 'flex';
+			el.style.alignItems = 'center';
+			el.style.justifyContent = 'center';
+			el.textContent = name || prefab;
+		  }
 
-          LAYERS.appendChild(el);
-        }
-      }
+		  LAYERS.appendChild(el);
+		  sceneRegistry.elements.add(el);
 
-      // Fetch & parse XML
-      async function loadAndRender(){
-        let xmlText = '';
-        try{
-          const res = await fetch(xmlUrl, { cache:'no-store' });
-          xmlText = await res.text();
-        } catch(e){
-          console.error('Failed to load XML:', e);
-          return;
-        }
-        const dom = new DOMParser().parseFromString(xmlText, 'text/xml');
+		  // Parse animations on this item
+		  const animNodes = [...it.querySelectorAll(':scope > Animation')];
+		  if (animNodes.length){
+			const trackMap = new Map();
+			for (const an of animNodes){
+			  const animName = an.getAttribute('name') || 'Custom';
+			  const xs = parseNumList(an.getAttribute('x'));
+			  const ys = parseNumList(an.getAttribute('y'));
+			  const ts = parseNumList(an.getAttribute('duration')); // absolute times (s)
+			  const { frames, duration } = buildKeyframes(xs, ys, ts, sx, sy);
 
-        // Pick scene
-        let sceneEl = null;
-        if (initialScene){
-          sceneEl = dom.querySelector(`Scene[scenename="${CSS.escape(initialScene)}"]`);
-        }
-        if (!sceneEl){
-          sceneEl = dom.querySelector('Scene');
-        }
-        if (!sceneEl){
-          console.warn('No <Scene> found in XML.');
-          return;
-        }
-        renderScene(sceneEl);
+			  // Choose a sensible default easing
+			  let easing = 'ease-in-out';
+			  if (/^in$/i.test(animName)) easing = 'cubic-bezier(.2,.8,.2,1)';    // snappy ease-out
+			  if (/^out$/i.test(animName)) easing = 'cubic-bezier(.4,0,.6,1)';    // ease-in feel
 
-        // (Optional) allow switching scenes quickly with ?scene=… or window.scene='Name'
-        window.setXMLScene = (name) => {
-          const next = dom.querySelector(`Scene[scenename="${CSS.escape(name)}"]`);
-          if (next) renderScene(next);
-        };
-      }
+			  trackMap.set(animName.toLowerCase(), { frames, duration, easing });
+			}
+			sceneRegistry.tracks.set(el, trackMap);
 
-      loadAndRender();
-    })();
+			// If there's an InitialPosition, set it immediately
+			const init = trackMap.get('initialposition');
+			if (init && init.frames.length){
+			  // Set final keyframe of InitialPosition directly (offset 1)
+			  const last = init.frames[init.frames.length - 1];
+			  if (last.left) el.style.left = last.left;
+			  if (last.top)  el.style.top  = last.top;
+			}
+		  }
+		}
+	  }
+
+	  function play(animName){
+		if (!sceneRegistry) return;
+		const key = (animName || 'In').toLowerCase();
+
+		// Cancel any currently running animations so we can restart cleanly
+		for (const [el, running] of sceneRegistry.activeAnims){
+		  try { running.cancel(); } catch(e){}
+		  sceneRegistry.activeAnims.delete(el);
+		}
+
+		for (const [el, trackMap] of sceneRegistry.tracks){
+		  const def = trackMap.get(key);
+		  if (!def || !def.frames.length || def.duration <= 0) continue;
+
+		  const anim = el.animate(def.frames, {
+			duration: def.duration,
+			fill: 'forwards',
+			easing: def.easing
+		  });
+		  sceneRegistry.activeAnims.set(el, anim);
+		}
+	  }
+
+	  // Expose helpers
+	  window.playXML = play;
+	  window.setXMLScene = (name) => {
+		if (!window._xmlDOM) return;
+		const next = window._xmlDOM.querySelector(`Scene[scenename="${CSS.escape(name)}"]`);
+		if (next){
+		  renderScene(next);
+		  // Autoplay when switching
+		  play('InitialPosition');
+		  // Small timeout lets layout settle before In
+		  setTimeout(() => play(autoPlayName), 10);
+		}
+	  };
+
+	  // Fetch and render
+	  async function loadAndRender(){
+		let xmlText = '';
+		try{
+		  const res = await fetch(xmlUrl, { cache:'no-store' });
+		  xmlText = await res.text();
+		} catch(e){
+		  console.error('Failed to load XML:', e);
+		  return;
+		}
+		const dom = new DOMParser().parseFromString(xmlText, 'text/xml');
+		window._xmlDOM = dom;
+
+		let sceneEl = null;
+		if (initialScene){
+		  sceneEl = dom.querySelector(`Scene[scenename="${CSS.escape(initialScene)}"]`);
+		}
+		if (!sceneEl) sceneEl = dom.querySelector('Scene');
+		if (!sceneEl){
+		  console.warn('No <Scene> found in XML.');
+		  return;
+		}
+
+		renderScene(sceneEl);
+
+		// Bring items to their defined initial positions (if present), then play chosen animation
+		play('InitialPosition');
+		setTimeout(() => play(autoPlayName), 10);
+	  }
+
+	  loadAndRender();
+	})();
 
     // ===== Utilities
     const qs = (s) => document.querySelector(s);
