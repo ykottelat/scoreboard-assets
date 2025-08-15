@@ -411,35 +411,52 @@ function applyScore(s){
     ws.addEventListener('message', (evt)=>{
       let msg; try{ msg=JSON.parse(evt.data); }catch{ return; }
       wsLog('←', msg);
-      switch ((msg.type||'').toLowerCase()){
+      switch ((msg.type || '').toLowerCase()){
         case 'state': {
           const reapply = () => {
             applyTeams(msg.teams);
             applyScore(msg.score);
-            if (msg.clock) net = { running:!!msg.clock.running, startEpochMs:msg.clock.startEpochMs||0, carryMs:msg.clock.carryMs||0 };
-            if (typeof msg.serverNowMs === 'number') skewMs = Date.now() - msg.serverNowMs;
+            if (msg.clock) net = {
+              running: !!msg.clock.running,
+              startEpochMs: msg.clock.startEpochMs || 0,
+              carryMs: msg.clock.carryMs || 0
+            };
+            if (typeof msg.serverNowMs === 'number') {
+              skewMs = Date.now() - msg.serverNowMs;
+            }
           };
+      
+          // ✅ Only drive scene/autoplay from the xml node
           if (msg.xml?.url && window.loadXML) {
-            Promise.resolve(window.loadXML(msg.xml.url, msg.xml.scene, msg.xml.autoplay))
+            Promise
+              .resolve(window.loadXML(msg.xml.url, msg.xml.scene, msg.xml.autoplay))
               .then(reapply);
           } else {
             reapply();
           }
           break;
         }
-        case 'teams': applyTeams(msg); break;
-        case 'score': applyScore(msg); break;
+      
+        case 'teams':  applyTeams(msg); break;
+        case 'score':  applyScore(msg); break;
+      
         case 'clock':
-          net = { running:!!msg.running, startEpochMs:msg.startEpochMs||0, carryMs:msg.carryMs||0 };
-          if (typeof msg.serverNowMs==='number') skewMs = Date.now()-msg.serverNowMs;
+          net = {
+            running: !!msg.running,
+            startEpochMs: msg.startEpochMs || 0,
+            carryMs: msg.carryMs || 0
+          };
+          if (typeof msg.serverNowMs === 'number') {
+            skewMs = Date.now() - msg.serverNowMs;
+          }
           break;
+      
         case 'xml':
+          // ✅ Scene changes come through the xml message
           if (msg.url) window.loadXML?.(msg.url, msg.scene, msg.autoplay);
           break;
-        case 'scene':
-          window.setXMLScene?.(msg.name || msg.scene || '');
-          if (msg.autoplay) window.playXML?.(msg.autoplay);
-          break;
+      
+        // (keep anim if your server still uses it to trigger In/Out on the current scene)
         case 'anim':
           window.playXML?.(msg.name || 'In');
           break;
