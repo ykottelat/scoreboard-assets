@@ -193,6 +193,16 @@ function wsLog(dir, msg){
         const bg=parseColor(getStr(a,'imagecolor','color','bg'));
         if (bg) el.style.background=bg;
         el.style.pointerEvents='none';
+        if (DIAG){
+          if (!bg){
+            console.warn('[XML][panel] No color parsed for', a.name || '(unnamed)', a);
+          } else {
+            console.info(
+              '[XML][panel] color=', bg,
+              'box=', el.style.left, el.style.top, el.style.width, el.style.height
+            );
+          }
+        }
       } else if (prefab==='image'){
         const raw = getStr(a,'defaultimage','image','src');
         const src = raw ? new URL(raw, window._xmlBase || location.href).href : '';
@@ -212,19 +222,6 @@ function wsLog(dir, msg){
         el.style.fontWeight = 700;
         el.classList.add(...alignClasses(align).split(' '));
         el.textContent = getStr(a,'defaulttext','text','value','content') || '';
-
-        if (prefab === 'panel'){
-          if (DIAG){
-            if (!bg){
-              console.warn('[XML][panel] No color parsed for', a.name || '(unnamed)', a);
-            } else {
-              console.info(
-                '[XML][panel] color=', bg,
-                'box=', el.style.left, el.style.top, el.style.width, el.style.height
-              );
-            }
-          }
-        }
         
         // --- responsive sizing (POINT 3) ---
         const minPx = (getNum(a,'minfontsize','minfont','minsize') || 8)  * (TARGET_H/(baseH||TARGET_H));
