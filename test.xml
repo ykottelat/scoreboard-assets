@@ -31,7 +31,7 @@
 	<Scene name="TeamPresentation" scenename="TeamPresentation">
 		<Item Prefab="Panel" Name="Base" X="0" Y="0" Width="1024" Height="576" Imagecolor="49;77;121;255" />
 		<Item Prefab="Image" Name="ClubLogo" X="31" Y="5" width="220" height="272" DefaultImage="/assets/home.png"/>
-		<Item Prefab="Text" Name="Name" X="-512" Y="-158"  Width="285" Height="130" TextColor="255;255;255;255" DefaultText="XXX Yyy" font="Droid Sans Mono;75" MaxFontSize="200" MinFontSize="24">
+		<Item Prefab="Text" Name="Name" X="-512" Y="-158"  Width="570" Height="260" TextColor="255;255;255;255" DefaultText="XXX Yyy" font="Droid Sans Mono;75" MaxFontSize="200" MinFontSize="24">
 			<Animation Name="In" X="-512;2" Y="-158;-158" Duration="0;1"/>
 			<Animation Name="InitialPosition" X="-512;-512" Y="-158;-158" Duration="0;0.01"/>
 			<Animation Name="Next" X="2;-512;2" Y="-158;-158;-158" Duration="0;1;2"/>
