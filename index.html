@@ -30,10 +30,10 @@
     z-index:12;
     container-type:size; 
   }
-  .xml-layers .item{ position:absolute; overflow:hidden; }
-  .xml-layers .text{
-    display:flex; line-height:1; padding:0 .25rem; word-break:break-word;
-  }
+  .xml-layers .item,
+  .xml-layers .text { box-sizing: border-box; }
+  .xml-layers .text { padding: 0 .25rem; }
+  .xml-layers img.item { display: block; }
   .align-left{justify-content:flex-start;text-align:left}
   .align-center{justify-content:center;text-align:center}
   .align-right{justify-content:flex-end;text-align:right}
@@ -235,11 +235,11 @@ function wsLog(dir, msg){
       
         if (HAS_CQ){
           // Scales with the board because .xml-layers has container-type:size
-          el.style.fontSize = `clamp(${minPx}px, calc(var(--box-h-p) * 1cqh * 0.70), ${maxPx}px)`;
+          el.style.fontSize = `clamp(${minPx}px, calc(var(--box-h-p) * 1cqh * 1), ${maxPx}px)`;
         } else {
           // Fallback for browsers without container units; ResizeObserver (point 2) keeps this updated
           const boardH = LAYERS.getBoundingClientRect().height;
-          const px = Math.max(minPx, Math.min(Math.round((hPct/100)*boardH*0.70), maxPx));
+          const px = Math.max(minPx, Math.min(Math.round((hPct/100)*boardH*1), maxPx));
           el.style.fontSize = px + 'px';
         }
       
