@@ -1,0 +1,69 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Overlay>
+	<!-- A single scene that mimics the "no XML" default board -->
+	<Scene name="DefaultBoard" scenename="DefaultBoard">
+		<!-- Base panel defines coordinate system (transparent) -->
+		<Item Prefab="Panel" Name="Base" X="0" Y="0" Width="1024" Height="576" ImageColor="0;0;0;0"/>
+		<!-- Top logos (220x272) -->
+		<Item Prefab="Image" Name="ClubLogo" X="31" Y="0" Width="220" Height="272" DefaultImage="/assets/home.png"/>
+		<Item Prefab="Image" Name="ClubLogo2" X="773" Y="0" Width="220" Height="272" DefaultImage="/assets/away.png"/>
+		<!-- Center game clock box (460x200) -->
+		<Item Prefab="Text" Name="GameTime" X="282" Y="0" Width="460" Height="200" TextAlignment="MiddleCenter" TextColor="255;255;255;255" Font="Droid Sans Mono;90" MinFontSize="24" MaxFontSize="160" DefaultText="00:00"/>
+		<!-- Sponsor centered below the taller of (logos, clock): top = 272 + 12 = 284 -->
+		<Item Prefab="Image" Name="SponsorLogo" X="282" Y="284" Width="460" Height="254" DefaultImage="/assets/sponsor.png"/>
+		<!-- Scores directly under the logos (top = 272 + 12 = 284, size = logo_w × clock_h) -->
+		<Item Prefab="Text" Name="HomeScore" X="31" Y="284" Width="220" Height="200" TextAlignment="MiddleCenter" TextColor="255;255;255;255" Font="Droid Sans Mono;120" MinFontSize="24" MaxFontSize="200" DefaultText="0"/>
+		<Item Prefab="Text" Name="AwayScore" X="773" Y="284" Width="220" Height="200" TextAlignment="MiddleCenter" TextColor="255;255;255;255" Font="Droid Sans Mono;120" MinFontSize="24" MaxFontSize="200" DefaultText="0"/>
+		<!-- Team labels around vertical middle (576/2 = 288) -->
+		<Item Prefab="Text" Name="HomeTeam" X="24" Y="268" Width="300" Height="40" TextAlignment="MiddleLeft" TextColor="211;211;211;255" Font="Droid Sans Mono;28" MinFontSize="12" MaxFontSize="48" DefaultText=""/>
+		<Item Prefab="Text" Name="AwayTeam" X="700" Y="268" Width="300" Height="40" TextAlignment="MiddleRight" TextColor="211;211;211;255" Font="Droid Sans Mono;28" MinFontSize="12" MaxFontSize="48" DefaultText=""/>
+		<!-- Time of day near lower center -->
+		<Item Prefab="Text" Name="TOD" X="362" Y="520" Width="300" Height="40" TextAlignment="MiddleCenter" TextColor="189;189;189;255" Font="Droid Sans Mono;28" MinFontSize="12" MaxFontSize="48" DefaultText="00:00:00"/>
+		<!-- Optional: simple "In" animation for a little life -->
+		<Item Prefab="Text" Name="GameTime">
+			<Animation Name="In" X="282;282" Y="-30;0" Duration="0;0.6"/>
+		</Item>
+		<Item Prefab="Image" Name="SponsorLogo">
+			<Animation Name="In" X="282;282" Y="330;284" Duration="0;0.5"/>
+		</Item>
+		<Item Prefab="Text" Name="HomeScore">
+			<Animation Name="In" X="31;31" Y="330;284" Duration="0;0.5"/>
+		</Item>
+		<Item Prefab="Text" Name="AwayScore">
+			<Animation Name="In" X="773;773" Y="330;284" Duration="0;0.5"/>
+		</Item>
+	</Scene>
+	<!-- A single scene that mimics the "no XML" default board -->
+	<Scene name="GameClockModified" scenename="GameClockModified">
+		<!-- Base panel defines coordinate system (transparent) -->
+		<Item Prefab="Panel" Name="Base" X="0" Y="0" Width="1024" Height="576" ImageColor="0;0;0;0"/>
+		<!-- Top logos (220x272) -->
+		<Item Prefab="Image" Name="ClubLogo" X="51" Y="0" Width="220" Height="272" DefaultImage="/assets/home.png"/>
+		<Item Prefab="Image" Name="ClubLogo2" X="763" Y="0" Width="220" Height="272" DefaultImage="/assets/away.png"/>
+		<!-- Center game clock box (460x200) -->
+		<Item Prefab="Text" Name="GameTime" X="282" Y="0" Width="460" Height="200" TextAlignment="MiddleCenter" TextColor="255;255;255;255" Font="Droid Sans Mono;90" MinFontSize="24" MaxFontSize="160" DefaultText="00:00"/>
+		<!-- Sponsor centered below the taller of (logos, clock): top = 272 + 12 = 284 -->
+		<Item Prefab="Image" Name="SponsorLogo" X="282" Y="284" Width="460" Height="254" DefaultImage="/assets/sponsor.png"/>
+		<!-- Scores directly under the logos (top = 272 + 12 = 284, size = logo_w × clock_h) -->
+		<Item Prefab="Text" Name="HomeScore" X="31" Y="284" Width="220" Height="200" TextAlignment="MiddleCenter" TextColor="255;255;255;255" Font="Droid Sans Mono;120" MinFontSize="24" MaxFontSize="200" DefaultText="0"/>
+		<Item Prefab="Text" Name="AwayScore" X="773" Y="284" Width="220" Height="200" TextAlignment="MiddleCenter" TextColor="255;255;255;255" Font="Droid Sans Mono;120" MinFontSize="24" MaxFontSize="200" DefaultText="0"/>
+		<!-- Team labels around vertical middle (576/2 = 288) -->
+		<Item Prefab="Text" Name="HomeTeam" X="24" Y="268" Width="300" Height="40" TextAlignment="MiddleLeft" TextColor="211;211;211;255" Font="Droid Sans Mono;28" MinFontSize="12" MaxFontSize="48" DefaultText=""/>
+		<Item Prefab="Text" Name="AwayTeam" X="700" Y="268" Width="300" Height="40" TextAlignment="MiddleRight" TextColor="211;211;211;255" Font="Droid Sans Mono;28" MinFontSize="12" MaxFontSize="48" DefaultText=""/>
+		<!-- Time of day near lower center -->
+		<Item Prefab="Text" Name="TOD" X="362" Y="520" Width="300" Height="40" TextAlignment="MiddleCenter" TextColor="189;189;189;255" Font="Droid Sans Mono;28" MinFontSize="12" MaxFontSize="48" DefaultText="00:00:00"/>
+		<!-- Optional: simple "In" animation for a little life -->
+		<Item Prefab="Text" Name="GameTime">
+			<Animation Name="In" X="282;282" Y="-30;0" Duration="0;0.6"/>
+		</Item>
+		<Item Prefab="Image" Name="SponsorLogo">
+			<Animation Name="In" X="282;282" Y="330;284" Duration="0;0.5"/>
+		</Item>
+		<Item Prefab="Text" Name="HomeScore">
+			<Animation Name="In" X="31;31" Y="330;284" Duration="0;0.5"/>
+		</Item>
+		<Item Prefab="Text" Name="AwayScore">
+			<Animation Name="In" X="773;773" Y="330;284" Duration="0;0.5"/>
+		</Item>
+	</Scene>
+</Overlay>
