@@ -447,6 +447,12 @@ function applyScore(s){
       let msg; try{ msg=JSON.parse(evt.data); }catch{ return; }
       wsLog('←', msg);
       switch ((msg.type || '').toLowerCase()){
+        case 'player':
+          // Fill the TeamPresentation scene items from your XML
+          setXmlText(msg.name, 'Name');     // <Item Name="Name" Prefab="Text" .../>
+          setXmlText(msg.bib,  'Bib');      // <Item Name="Bib"  Prefab="Text" .../>
+          setXmlImage(msg.picture, 'Picture'); // <Item Name="Picture" Prefab="Image" .../>
+          break;
         case 'state': {
           const reapply = () => {
             applyTeams(msg.teams);
