@@ -12,7 +12,7 @@
 			<Animation Name="In" X="282;282" Y="-30;0" Duration="0;0.6"/>
 		</Item>
 		<!-- Sponsor centered below the taller of (logos, clock): top = 272 + 12 = 284 -->
-		<Item Prefab="Image" Name="SponsorLogo" X="282" Y="284" Width="460" Height="254" DefaultImage="/assets/sponsor.png">
+		<Item Prefab="Image" Name="SponsorLogo" X="282" Y="200" Width="460" Height="254" DefaultImage="/assets/sponsor.png">
 			<Animation Name="In" X="282;282" Y="330;284" Duration="0;0.5"/>
 		</Item>
 		<!-- Scores directly under the logos (top = 272 + 12 = 284, size = logo_w × clock_h) -->
@@ -57,5 +57,6 @@
 		<Item Prefab="Text" Name="TOD" X="362" Y="520" Width="300" Height="40" TextAlignment="MiddleCenter" TextColor="189;189;189;255" Font="Droid Sans Mono;28" MinFontSize="12" MaxFontSize="48" DefaultText="00:00:00"/>
 	</Scene>
 </Overlay>
+
 
 
