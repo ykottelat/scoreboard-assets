@@ -43,6 +43,12 @@
 			<Animation Name="Next" X="786;1242;786" Y="4;4;4" Duration="0;1;2"/>
 			<Animation Name="Out" X="786;1242" Y="4;4" Duration="0;1"/>
 		</Item>
+		<Item prefab="Text" name="Bib" x="-244" y="-25" width="244" height="240" textcolor="255;255;255;255" defaulttext="10" font="Droid Sans Mono;25" maxfontsize="150" minfontsize="1" animator="SlideIn">
+			<Animation name="In" x="-244;264" y="-25;-25" duration="0;1"/>
+			<Animation name="InitialPosition" x="-244;-244" y="-25;-25" duration="0;0.01"/>
+			<Animation name="Next" x="264;-244;264" y="-25;-25;-25" duration="0;1;2"/>
+			<Animation name="Out" x="264;-244" y="-25;-25" duration="0;1"/>
+		</Item>
 	</Scene>
 </Overlay>
 
