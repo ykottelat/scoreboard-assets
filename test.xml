@@ -33,11 +33,11 @@
 			<Animation Name="Next" X="2;-570;2" Y="316;316;316" Duration="0;1;2"/>
 			<Animation Name="Out" X="2;-570" Y="316;316" Duration="0;1"/>
 		</Item>
-		<Item prefab="Image" Name="Picture" X="1242" Y="4" Width="218" Height="280" Defaultimage="/assets/placeholder.png" animator="SlideIn">
-			<Animation Name="In" X="1242;786" Y="4;4" Duration="0;1"/>
-			<Animation Name="InitialPosition" X="1242;1242" Y="4;4" Duration="0;0.01"/>
-			<Animation Name="Next" X="786;1242;786" Y="4;4;4" Duration="0;1;2"/>
-			<Animation Name="Out" X="786;1242" Y="4;4" Duration="0;1"/>
+		<Item prefab="Image" Name="Picture" X="1460" Y="4" Width="436" Height="560" Defaultimage="/assets/placeholder.png" animator="SlideIn">
+			<Animation Name="In" X="1460;568" Y="4;4" Duration="0;1"/>
+			<Animation Name="InitialPosition" X="1460;1460" Y="4;4" Duration="0;0.01"/>
+			<Animation Name="Next" X="568;1460;568" Y="4;4;4" Duration="0;1;2"/>
+			<Animation Name="Out" X="568;1460" Y="4;4" Duration="0;1"/>
 		</Item>
 		<Item prefab="Text" name="Bib" x="-244" y="-25" width="244" height="240" textcolor="255;255;255;255" defaulttext="10" font="Droid Sans Mono;25" maxfontsize="150" minfontsize="1" animator="SlideIn">
 			<Animation name="In" x="-244;264" y="-25;-25" duration="0;1"/>
@@ -47,6 +47,7 @@
 		</Item>
 	</Scene>
 </Overlay>
+
 
 
 
