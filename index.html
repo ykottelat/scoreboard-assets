@@ -236,11 +236,11 @@ function wsLog(dir, msg){
       
         if (HAS_CQ){
           // Scales with the board because .xml-layers has container-type:size
-          el.style.fontSize = `clamp(${minPx}px, calc(var(--box-h-p) * 1cqh * 0.9), ${maxPx}px)`;
+          el.style.fontSize = `clamp(${minPx}px, calc(var(--box-h-p) * 1cqh * 0.7), ${maxPx}px)`;
         } else {
           // Fallback for browsers without container units; ResizeObserver (point 2) keeps this updated
           const boardH = LAYERS.getBoundingClientRect().height;
-          const px = Math.max(minPx, Math.min(Math.round((hPct/100)*boardH*0.9), maxPx));
+          const px = Math.max(minPx, Math.min(Math.round((hPct/100)*boardH*0.7), maxPx));
           el.style.fontSize = px + 'px';
         }
       
