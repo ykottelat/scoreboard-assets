@@ -8,7 +8,7 @@
 		<Item Prefab="Image" Name="ClubLogo" X="31" Y="0" Width="220" Height="272" DefaultImage="/assets/home.png"/>
 		<Item Prefab="Image" Name="ClubLogo2" X="773" Y="0" Width="220" Height="272" DefaultImage="/assets/away.png"/>
 		<!-- Center game clock box (460x200) -->
-		<Item Prefab="Text" Name="GameTime" X="282" Y="0" Width="460" Height="200" TextAlignment="MiddleCenter" TextColor="255;255;255;255" Font="Droid Sans Mono;90" MinFontSize="24" MaxFontSize="160" DefaultText="00:00">
+		<Item Prefab="Text" Name="GameTime" X="282" Y="0" Width="460" Height="200" TextAlignment="MiddleCenter" TextColor="255;255;255;255" Font="Droid Sans Mono;80" MinFontSize="24" MaxFontSize="160" DefaultText="00:00">
 			<Animation Name="In" X="282;282" Y="-30;0" Duration="0;0.6"/>
 		</Item>
 		<!-- Sponsor centered below the clock: top = 200 + 12 = 212 -->
@@ -57,6 +57,7 @@
 		<Item Prefab="Text" Name="TOD" X="362" Y="520" Width="300" Height="40" TextAlignment="MiddleCenter" TextColor="189;189;189;255" Font="Droid Sans Mono;28" MinFontSize="12" MaxFontSize="48" DefaultText="00:00:00"/>
 	</Scene>
 </Overlay>
+
 
 
 
