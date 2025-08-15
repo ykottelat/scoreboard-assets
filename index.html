@@ -1,946 +1,390 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
 <head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>HTML5 Scoreboard</title>
-
-  <!-- Droid Sans Mono -->
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Droid+Sans+Mono&display=swap" rel="stylesheet">
-
-  <style>
-    :root{
-      /* Colors */
-      --bg:#0b0b0b; --fg:#f5f5f5; --muted:#bdbdbd; --accent:#e53935;
-      --digit-shadow:0 0 12px rgba(255,255,255,.15);
-
-      /* Reference sizes (1024×576 design) */
-      --clock-w:460px; --clock-h:200px;      /* clock box size */
-      --logo-w:220px;  --logo-h:272px;       /* logo box size */
-      --sponsor-w:520px; --sponsor-h:254px;  /* sponsor box size */
-      --sponsor-gap: 12px;                   /* vertical gap under the clock */
-      --score-gap: 12px;                     /* vertical gap under the logos (fallback) */
-    }
-
-    *,*::before,*::after{ box-sizing:border-box; }
-    html,body{ width:100%; max-width:100%; overflow-x:hidden; height:100%; }
-    body{
-      margin:0;
-      font-family:'Droid Sans Mono', ui-monospace, SFMono-Regular, Menlo, Consolas, 'Liberation Mono', 'Courier New', monospace;
-      background:var(--bg); color:var(--fg);
-      display:grid; place-items:center;
-    }
-
-    .board{
-      width:min(100dvw, 1024px, calc(100dvh * (16/9)));
-      aspect-ratio:16/9; height:auto;
-
-      position:relative; overflow:hidden;
-      padding:clamp(8px,2vw,24px);
-      display:grid; grid-template-rows:auto 1fr auto;
-
-      border-radius:24px;
-      box-shadow:0 20px 60px rgba(0,0,0,.45) inset, 0 10px 30px rgba(0,0,0,.35);
-      background:rgba(13,71,161,.92); /* blue board */
-
-      container-type:size; /* enable cqw/cqh */
-    }
-
-    .top{ display:grid; grid-template-columns:1fr auto 1fr; align-items:center; gap:clamp(8px,2vw,24px); }
-
-    /* === CLOCK: centered at top, fixed box === */
-    .game-clock{
-      position:absolute; top:0; left:50%; transform:translateX(-50%);
-      width:var(--clock-w); height:var(--clock-h);
-      display:grid; place-items:center;
-      font-variant-numeric:tabular-nums; letter-spacing:.04em; text-shadow:var(--digit-shadow);
-      font-weight:700;
-      font-size: min(calc(var(--clock-w)/5.2), calc(var(--clock-h)*0.8));
-      line-height:1;
-      border-radius:16px; border:2px solid transparent;
-      background:linear-gradient(180deg, rgba(255,255,255,.08), rgba(255,255,255,.02));
-      z-index:10;
-    }
-
-    /* === LOGOS === */
-    .logo{
-      position:absolute; top:0;
-      width:var(--logo-w); height:var(--logo-h);
-      object-fit:contain; filter:drop-shadow(0 4px 8px rgba(0,0,0,.5));
-    }
-    .logo.home{
-      left: calc( (50% - (var(--clock-w) / 2)) / 2 - (var(--logo-w) / 2) );
-    }
-    .logo.away{
-      left: calc( ((50% + (var(--clock-w) / 2)) + 100%) / 2 - (var(--logo-w) / 2) );
-    }
-
-    /* === SPONSOR === */
-    .sponsor-top{
-      position:absolute;
-      left:50%;
-      transform:translateX(-50%);
-      top: calc( max(var(--logo-h), var(--clock-h)) + var(--sponsor-gap) );
-      width: var(--clock-w);
-      display:grid; place-items:center;
-      z-index:5;
-    }
-    .sponsor-top img{
-      width: 100%; height: auto; object-fit: contain;
-      filter: drop-shadow(0 6px 16px rgba(0,0,0,.6));
-    }
-
-    /* === SCORES === */
-    .score{
-      position: absolute;
-      top: calc(var(--logo-h) + var(--score-gap));
-      width: var(--logo-w);
-      height: var(--clock-h);
-      display: grid; place-items: center;
-
-      font-variant-numeric: tabular-nums;
-      font-weight: 800;
-      text-shadow: var(--digit-shadow);
-      line-height: 1;
-
-      font-size: min(
-        calc(var(--clock-h) * 0.8),
-        calc(var(--logo-w) / 2.2)
-      );
-
-      z-index: 7;
-    }
-    .score.home{
-      left: calc( (50% - (var(--clock-w) / 2)) / 2 - (var(--logo-w) / 2) );
-    }
-    .score.away{
-      left: calc( ( (50% + (var(--clock-w) / 2)) + 100% ) / 2 - (var(--logo-w) / 2) );
-    }
-
-    .bottom { }
-    .tod{
-      position: absolute;
-      left: 50%;
-      top: calc( ( max(var(--logo-h), var(--clock-h)) + var(--sponsor-gap) + var(--sponsor-h) + 100% ) / 2 );
-      transform: translate(-50%, -50%);
-      font-variant-numeric: tabular-nums;
-      color: var(--muted);
-      font-size: min(40px, 5vmin);
-      letter-spacing: .12em;
-      text-shadow: 0 0 10px rgba(0,0,0,.6);
-      z-index: 4;
-    }
-    
-    .labels{
-      position:absolute; left:0; right:0; top:50%; transform:translateY(-50%);
-      pointer-events:none; display:grid; grid-template-columns:1fr 1fr;
-      padding:0 clamp(8px,2vw,24px); font-size:clamp(10px,2.2vw,22px); color:#d3d3d3; opacity:.85;
-    }
-    .labels .home{ justify-self:start; } .labels .away{ justify-self:end; }
-
-    .controls{
-      position:absolute; left:50%; transform:translateX(-50%);
-      bottom:8px; display:flex; gap:8px; align-items:center;
-      background:rgba(255,255,255,.06); border:1px solid rgba(255,255,255,.12);
-      padding:6px 10px; border-radius:999px; backdrop-filter:blur(6px);
-      font-size:14px; color:#eee;
-    }
-    .controls button, .controls input[type="number"]{
-      background:rgba(0,0,0,.35); border:1px solid rgba(255,255,255,.18);
-      color:#fff; padding:6px 10px; border-radius:10px; font-size:14px;
-    }
-    .controls .spacer{ width:1px; height:20px; background:rgba(255,255,255,.18); margin:0 4px; }
-    .clean .controls{ display:none; }
-
-    /* === XML LAYERS === */
-    .xml-layers{
-      position:absolute; inset:0;
-      pointer-events:none;
-      z-index:12;
-      container-type:size;
-    }
-    .xml-layers .item{ position:absolute; overflow:hidden; } 
-    .xml-layers .text{
-      display:flex; line-height:1; padding:0 .25rem; word-break:break-word;
-    }
-    .xml-layers .align-left   { justify-content:flex-start; text-align:left; }
-    .xml-layers .align-center { justify-content:center;     text-align:center; }
-    .xml-layers .align-right  { justify-content:flex-end;   text-align:right; }
-    .xml-layers .valign-top    { align-items:flex-start; }
-    .xml-layers .valign-middle { align-items:center; }
-    .xml-layers .valign-bottom { align-items:flex-end; }
-
-    const DIAG = __params.has('diag');
-
-    function tint(el, prefab){
-      if (!DIAG) return;
-      // light tints to visualize boxes
-      const t = { panel:'rgba(255,255,255,.03)', image:'rgba(0,0,0,.05)', text:'rgba(255,255,0,.08)' }[prefab] || 'transparent';
-      if (el.style.background === '') el.style.background = t;
-      el.style.outline = '1px dashed rgba(255,255,255,.3)';
-    }
-    
-    function label(el, name){
-      if (!DIAG) return;
-      const tag = document.createElement('div');
-      tag.textContent = name;
-      tag.style.cssText = 'position:absolute;left:0;top:0;font:10px/1.2 monospace;background:rgba(0,0,0,.6);color:#fff;padding:2px 4px;border-bottom-right-radius:6px;pointer-events:none;';
-      el.appendChild(tag);
-    }
-    /* Hide built-in widgets when XML mode is active */
-    body.xmlMode .top,
-    body.xmlMode .sponsor-top,
-    body.xmlMode .middle,
-    body.xmlMode .labels,
-    body.xmlMode .bottom,
-    body.xmlMode .controls { display:none !important; }
-
-    /* ===== Container-query responsive extras ===== */
-    @supports (width: 1cqw){
-      :root{
-        --logo-w-p:21.484375;   /* 220/1024*100 */
-        --logo-h-p:47.222222;   /* 272/576*100 */
-        --sponsor-w-p:50.78125; /* 520/1024*100 */
-        --sponsor-h-p:44.097222;/* 254/576*100 */
-        --clock-w-p:44.921875;  /* 460/1024*100 */
-        --clock-h-p:34.722222;  /* 200/576*100 */
-        --sponsor-gap-p: 2;
-        --score-gap-p: 2;
-      }
-      .tod{
-        top: calc(
-          (
-            max( (var(--logo-h-p) * 1cqh), (var(--clock-h-p) * 1cqh) )
-            + (var(--sponsor-gap-p) * 1cqh)
-            + (var(--sponsor-h-p) * 1cqh)
-            + 100%
-          ) / 2
-        );
-        font-size: min(40px, 5cqw);
-      }
-      .game-clock{
-        width: calc(var(--clock-w-p) * 1cqw);
-        height: calc(var(--clock-h-p) * 1cqh);
-        left:50%; transform:translateX(-50%);
-        font-size: min(
-          calc((var(--clock-w-p) * 1cqw) / 3.3),
-          calc(var(--clock-h-p) * 1cqh * 0.8)
-        );
-      }
-      .logo{
-        width: calc(var(--logo-w-p) * 1cqw);
-        height: calc(var(--logo-h-p) * 1cqh);
-      }
-      .logo.home{
-        left: calc( (50% - ( (var(--clock-w-p) * 1cqw) / 2 )) / 2
-                    - ( (var(--logo-w-p) * 1cqw) / 2 ) );
-      }
-      .logo.away{
-        left: calc( ( (50% + ( (var(--clock-w-p) * 1cqw) / 2 )) + 100% ) / 2
-                    - ( (var(--logo-w-p) * 1cqw) / 2 ) );
-      }
-      .sponsor-top{
-        top: calc( (var(--clock-h-p) * 1cqh) + (var(--sponsor-gap-p) * 1cqh) );
-        width: calc(var(--clock-w-p) * 1cqw);
-      }
-      .sponsor-top img{ width: 100%; height: auto; }
-      .score{
-        top: calc( (var(--logo-h-p) * 1cqh) + (var(--score-gap-p) * 1cqh) );
-        width:  calc(var(--logo-w-p) * 1cqw);
-        height: calc(var(--clock-h-p) * 1cqh);
-        font-size: min(
-          calc((var(--clock-h-p) * 1cqh) * 0.8),
-          calc((var(--logo-w-p) * 1cqw) / 1.2)
-        );
-      }
-      .score.home{
-        left: calc( (50% - ( (var(--clock-w-p) * 1cqw) / 2 )) / 2
-                    - ( (var(--logo-w-p) * 1cqw) / 2 ) );
-      }
-      .score.away{
-        left: calc( ( (50% + ( (var(--clock-w-p) * 1cqw) / 2 )) + 100% ) / 2
-                    - ( (var(--logo-w-p) * 1cqw) / 2 ) );
-      }
-    }
-  </style>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
+<title>XML Overlay (WS)</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Droid+Sans+Mono&display=swap" rel="stylesheet">
+<style>
+  :root{ --fg:#fff; }
+  html,body{height:100%;margin:0}
+  body{
+    background:#b71c1c; /* solid red */
+    color:var(--fg);
+    font-family:'Droid Sans Mono', ui-monospace, Consolas, monospace;
+    display:grid; place-items:center;
+  }
+  .board{
+    width:min(100dvw,1024px,calc(100dvh*(16/9)));
+    aspect-ratio:16/9; position:relative; overflow:hidden;
+    border-radius:24px;
+    /* keep the red visible inside the board too */
+    background:#b71c1c;
+  }
+  /* XML layer only */
+  .xml-layers{
+    position:absolute; inset:0;
+    pointer-events:none;
+    z-index:12;
+  }
+  .xml-layers .item{ position:absolute; overflow:hidden; }
+  .xml-layers .text{
+    display:flex; line-height:1; padding:0 .25rem; word-break:break-word;
+  }
+  .align-left{justify-content:flex-start;text-align:left}
+  .align-center{justify-content:center;text-align:center}
+  .align-right{justify-content:flex-end;text-align:right}
+  .valign-top{align-items:flex-start}
+  .valign-middle{align-items:center}
+  .valign-bottom{align-items:flex-end}
+</style>
 </head>
 <body>
-  <div class="board" id="board">
-    <div class="top">
-      <img id="homeLogo" class="logo home" alt="Home logo" />
-      <div class="game-clock" id="gameClock">00:00</div>
-      <img id="awayLogo" class="logo away" alt="Away logo" />
-      <!-- XML-driven overlay -->
-    </div>
-    
+  <div class="board">
     <div id="xmlLayers" class="xml-layers" aria-label="XML Layers"></div>
-
-    <!-- Sponsor centered directly under the clock -->
-    <div class="sponsor-top"><img id="sponsorLogo" alt="Sponsor logo" /></div>
-
-    <div class="middle">
-      <div class="score home" id="homeScore">0</div>
-      <div class="score away" id="awayScore">0</div>
-    </div>
-
-    <div class="labels">
-      <div class="home" id="homeName"></div>
-      <div class="away" id="awayName"></div>
-    </div>
-
-    <div class="bottom">
-      <div class="tod" id="timeOfDay">00:00:00</div>
-    </div>
-
-    <div class="controls" id="controls">
-      <button id="playPause">▶︎ Start</button>
-      <button id="reset">↺ Reset</button>
-      <span class="spacer"></span>
-      <button id="homePlus">Home +</button>
-      <button id="homeMinus">Home −</button>
-      <button id="awayPlus">Away +</button>
-      <button id="awayMinus">Away −</button>
-      <span class="spacer"></span>
-      <button id="fullBtn">⤢ Fullscreen</button>
-    </div>
   </div>
 
-  <script>
-    /* ================== early params + clean mode ================== */
-    const __params = new URLSearchParams(location.search);
-    (function earlyHideControls(){
-      if (__params.get('clean') === '1') {
-        const c = document.getElementById('controls');
-        if (c) c.style.display = 'none';
-      }
-    })();
+<script>
+/* ================= setup & tiny logger ================= */
+const P = new URLSearchParams(location.search);
+const wsLogFilter = (P.get('wslog') || '*').split(',').map(s=>s.trim().toLowerCase());
+const shouldLog = t => wsLogFilter[0]==='*' || wsLogFilter.includes((t||'').toLowerCase());
+function wsLog(dir, msg){
+  const t=(msg?.type||'(no type)').toLowerCase();
+  if (!shouldLog(t)) return;
+  console.log(`[WS] ${dir} ${t}`, msg);
+}
 
-    /* ===================== Tiny [WS] logger ===================== */
-    const WS_HISTORY = [];
-    const MAX_HISTORY = 200;
-    const WS_FILTER = (__params.get('wslog') || '*').split(',').map(s => s.trim().toLowerCase());
-    const shouldLog = (type) => WS_FILTER[0] === '*' || WS_FILTER.includes((type||'').toLowerCase());
-    function wsLog(dir, msg){
-      const type = (msg?.type || '(no type)').toLowerCase();
-      if (!shouldLog(type)) return;
-      const now = new Date();
-      const ts = `${now.toLocaleTimeString([], {hour12:false})}.${String(now.getMilliseconds()).padStart(3,'0')}`;
-      let brief = '';
-      switch (type){
-        case 'state': brief = `scene=${msg.scene ?? msg.xml?.scene ?? '-'} running=${!!msg.clock?.running}`; break;
-        case 'scene': brief = `name=${msg.name || msg.scene} autoplay=${msg.autoplay || '-'}`; break;
-        case 'anim':  brief = `name=${msg.name || 'In'}`; break;
-        case 'xml':   brief = `url=${msg.url}`; break;
-        case 'score': brief = `home=${msg.home} away=${msg.away}`; break;
-        case 'teams': brief = `${msg.homeName||''} vs ${msg.awayName||''}`; break;
-      }
-      console.log(`[WS] ${dir} ${ts} ${type}${brief ? ' — ' + brief : ''}`, msg);
-      WS_HISTORY.push({ dir, ts, type, msg });
-      if (WS_HISTORY.length > MAX_HISTORY) WS_HISTORY.shift();
+/* ================= XML engine (case-insensitive) ================= */
+(function(){
+  const LAYERS = document.getElementById('xmlLayers');
+  const TARGET_W=1024, TARGET_H=576;
+  const DIAG = P.has('diag');
+
+  // Debug helpers
+  function tint(el, prefab){
+    if (!DIAG) return;
+    const c = {panel:'rgba(255,255,255,.03)', image:'rgba(0,0,0,.05)', text:'rgba(255,255,0,.08)'}[prefab] || 'transparent';
+    if (!el.style.background) el.style.background = c;
+    el.style.outline = '1px dashed rgba(255,255,255,.35)';
+  }
+  function label(el, name){
+    if (!DIAG) return;
+    const tag = document.createElement('div');
+    tag.textContent = name;
+    tag.style.cssText='position:absolute;left:0;top:0;font:10px monospace;background:rgba(0,0,0,.6);color:#fff;padding:2px 4px;border-bottom-right-radius:6px;pointer-events:none;';
+    el.appendChild(tag);
+  }
+
+  const toPct=(px,dim)=> (px/dim)*100;
+  function attrsOf(el){ const o=Object.create(null); for (const a of el.attributes) o[a.name.toLowerCase()]=a.value; return o; }
+  function getNum(a,...k){ for (const x of k) if (a[x]!=null && a[x]!=='') return +a[x]; return 0; }
+  function getStr(a,...k){ for (const x of k) if (a[x]!=null) return a[x]; return ''; }
+  function parseColor(s){
+    if (!s) return null;
+    if (s.includes(';')){ const [r,g,b,a]=s.split(';').map(n=>+n||0); return `rgba(${r},${g},${b},${(a??255)/255})`; }
+    return s;
+  }
+  function parseFont(s){ if (!s) return {family:`'Droid Sans Mono', monospace`, sizePx:24};
+    const [fam,sz] = s.split(';'); return {family:fam||`'Droid Sans Mono', monospace`, sizePx:+(sz||24)}; }
+  function alignClasses(val){
+    const a=(val||'').toLowerCase();
+    const h=a.includes('left')?'align-left':a.includes('right')?'align-right':'align-center';
+    const v=a.includes('top')?'valign-top':a.includes('bottom')?'valign-bottom':'valign-middle';
+    return `${h} ${v}`;
+  }
+  function parseNumList(s){ return s? s.split(/[;,]/).map(v=>+v):[]; }
+  function buildKeyframes(xs,ys,ts,sx,sy){
+    const n=Math.min(xs.length,ys.length,ts.length); if (!n) return {frames:[],duration:0};
+    const total=ts[n-1]||.0001, frames=[];
+    for (let i=0;i<n;i++){
+      frames.push({
+        left: toPct(xs[i]*sx, TARGET_W)+'%',
+        top:  toPct(ys[i]*sy, TARGET_H)+'%',
+        offset: total? (ts[i]/total) : (i===n-1?1:0)
+      });
     }
+    frames[frames.length-1].offset=1;
+    return {frames, duration: total*1000};
+  }
 
-    /* ================= XML Layer Engine (case-insensitive attrs, robust) ============= */
-    (function(){
-      const params = __params;
-      const LAYERS = document.getElementById('xmlLayers');
-      const TARGET_W = 1024, TARGET_H = 576;
-      const DIAG = __params.has('diag');
-      
-      // ---- helpers ---------------------------------------------------------
-      const toPct = (px, dim) => (px / dim) * 100;
+  window._xmlByName = Object.create(null);
+  let sceneRegistry=null;
+  window._xmlBase = null;
 
-      function tint(el, prefab){
-        if (!DIAG) return;
-        const tint = {
-          panel:'rgba(255,255,255,.03)',
-          image:'rgba(0,0,0,.05)',
-          text:'rgba(255,255,0,.08)'
-        }[prefab] || 'transparent';
-        if (!el.style.background) el.style.background = tint;
-        el.style.outline = '1px dashed rgba(255,255,255,.3)';
-      }
-      
-      function label(el, name){
-        if (!DIAG) return;
-        const tag = document.createElement('div');
-        tag.textContent = name;
-        tag.style.cssText =
-          'position:absolute;left:0;top:0;font:10px/1.2 monospace;' +
-          'background:rgba(0,0,0,.6);color:#fff;padding:2px 4px;' +
-          'border-bottom-right-radius:6px;pointer-events:none;';
-        el.appendChild(tag);
-      }
-      
-      // Build a lower-cased attribute map for easy, case-insensitive lookups
-      function attrsOf(el){
-        const out = Object.create(null);
-        for (const a of el.attributes) out[a.name.toLowerCase()] = a.value;
-        return out;
-      }
-      function getNum(a, ...keys){
-        for (const k of keys){
-          if (a[k] != null && a[k] !== '') return +a[k];
-        }
-        return 0;
-      }
-      function getStr(a, ...keys){
-        for (const k of keys){
-          if (a[k] != null) return a[k];
-        }
-        return '';
-      }
-      function parseColor(s) {
-        if (!s) return null;
-        // Accept "r;g;b;a" OR "#rrggbb" OR "rgba(...)"
-        if (s.includes(';')) {
-          const [r,g,b,a] = s.split(';').map(n => +n || 0);
-          return `rgba(${r},${g},${b},${(a??255)/255})`;
-        }
-        return s; // assume valid css color
-      }
-      function parseFont(s){
-        if (!s) return { family: `'Droid Sans Mono', monospace`, sizePx: 24 };
-        const parts = s.split(';');
-        return { family: parts[0] || `'Droid Sans Mono', monospace`, sizePx: +(parts[1]||24) };
-        // also works for "Family;Size"
-      }
-      function alignClasses(val){
-        const a = (val || '').toLowerCase();
-        const h = a.includes('left') ? 'align-left' : a.includes('right') ? 'align-right' : 'align-center';
-        const v = a.includes('top') ? 'valign-top' : a.includes('bottom') ? 'valign-bottom' : 'valign-middle';
-        return `${h} ${v}`;
-      }
-      // Accept X/Y/Duration in any case
-      function parseNumList(s){ return s ? s.split(/[;,]/).map(v => +v) : []; }
-      function buildKeyframes(xList, yList, tList, sx, sy){
-        const n = Math.min(xList.length, yList.length, tList.length);
-        if (n === 0) return { frames: [], duration: 0 };
-        const total = tList[n-1] || 0.0001;
-        const frames = [];
-        for (let i = 0; i < n; i++){
-          const leftPx = xList[i] * sx;
-          const topPx  = yList[i] * sy;        // y-down
-          frames.push({
-            left:  toPct(leftPx, TARGET_W) + '%',
-            top:   toPct(topPx,  TARGET_H) + '%',
-            offset: total ? (tList[i] / total) : (i === n-1 ? 1 : 0)
-          });
-        }
-        frames[frames.length-1].offset = 1;
-        return { frames, duration: total * 1000 };
-      }
-    
-      // Global index so WS/ticks can update by name
-      window._xmlByName = Object.create(null);
-    
-      let sceneRegistry = null;
-    
-      function renderScene(sceneEl){
-        if (sceneRegistry?.activeAnims){
-          for (const anim of sceneRegistry.activeAnims.values()){ try{ anim.cancel(); }catch(e){} }
-        }
-        sceneRegistry = { tracks:new Map(), activeAnims:new Map() };
-        window._xmlByName = Object.create(null);
-        LAYERS.innerHTML = '';
-    
-        // Base from a Panel if present; handle any casing
-        let baseW = 512, baseH = 288;
-        const panel = [...sceneEl.querySelectorAll('Item')].find(n => {
-          const a = attrsOf(n);
-          return (a.prefab||a['prefab'])?.toLowerCase?.() === 'panel' || (a.type||'').toLowerCase() === 'panel';
-        });
-        if (panel){
-          const pa = attrsOf(panel);
-          baseW = getNum(pa, 'width','w','sizex');
-          baseH = getNum(pa, 'height','h','sizey');
-          if (!baseW) baseW = 512;
-          if (!baseH) baseH = 288;
-        }
-        const sx = TARGET_W / baseW;
-        const sy = TARGET_H / baseH;
-    
-        const items = [...sceneEl.querySelectorAll('Item')];
-        let builtCount = 0;
-    
-        for (const it of items){
-          const a = attrsOf(it);
-    
-          const prefab = (a.prefab || a.type || 'Unknown').toLowerCase();
-          if (prefab === 'animationprefab') continue;
-    
-          const name = getStr(a, 'name') || (a.prefab || 'Item');
-          const x = getNum(a, 'x');          // X or x
-          const y = getNum(a, 'y');          // Y or y  (y-down)
-          const w = getNum(a, 'width','w','sizex');
-          const h = getNum(a, 'height','h','sizey');
-    
-          const leftPx   = x * sx;
-          const topPx    = y * sy;
-          const widthPx  = (w || 0) * sx;
-          const heightPx = (h || 0) * sy;
-    
-          // Create element by prefab
-          let tag = 'div';
-          if (prefab === 'image') tag = 'img';
-          const el = document.createElement(tag);
-          el.className = 'item';
-          el.style.left   = toPct(leftPx, TARGET_W) + '%';
-          el.style.top    = toPct(topPx,  TARGET_H) + '%';
-          el.style.width  = toPct(widthPx, TARGET_W) + '%';
-          el.style.height = toPct(heightPx, TARGET_H) + '%';
-          el.dataset.itemName = name;
-
-          // decide stacking (can also read a 'z'/'order' attribute if present)
-          let z = 1;
-          if (prefab === 'panel') z = 0;
-          else if (prefab === 'image') z = 1;
-          else if (prefab === 'text') z = 2;
-          
-          // honor explicit z/order if present
-          const zAttr = +(a.z ?? a.order ?? a.layer ?? '');
-          if (!Number.isNaN(zAttr)) z = zAttr;
-          
-          tint(el, prefab);     // <-- call here
-          label(el, name);      // <-- and here
-          el.style.zIndex = String(z);
-          
-          if (prefab === 'panel'){
-            let bg = parseColor(getStr(a, 'imagecolor','color','bg'));
-            // If the color is fully opaque, make it semi-transparent during debug
-            if (bg && __params.has('diag')) {
-              // turn rgba(r,g,b,a) into rgba(r,g,b, a*0.3)
-              const m = bg.match(/^rgba?\((\d+),\s*(\d+),\s*(\d+)(?:,\s*([0-9.]+))?\)/i);
-              if (m) {
-                const alpha = (m[4] !== undefined ? parseFloat(m[4]) : 1) * 0.3;
-                bg = `rgba(${m[1]},${m[2]},${m[3]},${alpha})`;
-              }
-            }
-            if (bg) el.style.background = bg;
-            el.style.pointerEvents = 'none';
-          }
-          else if (prefab === 'image'){
-            const src = getStr(a, 'defaultimage','image','src');
-            const img = el;
-            img.decoding = 'async';
-            img.loading = 'eager';
-            if (src) img.src = src;
-            img.style.objectFit = 'contain';
-            img.style.filter = 'drop-shadow(0 4px 8px rgba(0,0,0,.35))';
-            img.alt = name;
-          }
-          else if (prefab === 'text'){
-            el.classList.add('text');
-            const color = parseColor(getStr(a, 'textcolor','color')) || 'rgba(255,255,255,.95)';
-            const font  = parseFont(getStr(a, 'font','fontfamily'));
-            const align = getStr(a, 'textalignment','alignment','align');
-    
-            el.style.color = color;
-            el.style.fontFamily = font.family + ', monospace';
-            el.style.fontWeight = 700;
-            el.classList.add(...alignClasses(align).split(' '));
-            el.textContent = getStr(a, 'defaulttext','text','value','content') || '';
-          
-            const minPx = (getNum(a, 'minfontsize','minfont','minsize') || 8)  * (TARGET_H / (baseH || TARGET_H));
-            const maxPx = (getNum(a, 'maxfontsize','maxfont','maxsize') || 200) * (TARGET_H / (baseH || TARGET_H));
-            const px = Math.max(minPx, Math.min(Math.round((heightPx || 0) * 0.70), maxPx));
-            el.style.fontSize = px + 'px';       // ← simple, robust
-            el.style.textShadow = '0 0 12px rgba(0,0,0,.35)';
-          }
-    
-          LAYERS.appendChild(el);
-          window._xmlByName[name] = el;
-          builtCount++;
-    
-          // Animations (case-insensitive)
-          const animNodes = [...it.querySelectorAll(':scope > Animation, :scope > animation')];
-          if (animNodes.length){
-            const trackMap = new Map();
-            for (const an of animNodes){
-              const aa = attrsOf(an);
-              const animName = (getStr(aa, 'name') || 'Custom').toLowerCase();
-              const xs = parseNumList(getStr(aa, 'x'));
-              const ys = parseNumList(getStr(aa, 'y'));
-              const ts = parseNumList(getStr(aa, 'duration','time','t'));
-              const { frames, duration } = buildKeyframes(xs, ys, ts, sx, sy);
-    
-              let easing = 'ease-in-out';
-              if (/^in$/i.test(animName))  easing = 'cubic-bezier(.2,.8,.2,1)';
-              if (/^out$/i.test(animName)) easing = 'cubic-bezier(.4,0,.6,1)';
-    
-              trackMap.set(animName, { frames, duration, easing });
-            }
-            sceneRegistry.tracks.set(el, trackMap);
-    
-            const init = sceneRegistry.tracks.get(el)?.get('initialposition');
-            if (init && init.frames.length){
-              const last = init.frames[init.frames.length - 1];
-              if (last.left) el.style.left = last.left;
-              if (last.top)  el.style.top  = last.top;
-            }
-          }
-        }
-    
-        if (!builtCount){
-          console.warn('[XML] Scene rendered 0 items. Likely attribute casing mismatch in source XML. Check element <Item> attributes.');
-        } else {
-          console.info('[XML] Rendered items:', builtCount);
-        }
-
-        if (__params.has('diag')) {
-        const rect = LAYERS.getBoundingClientRect();
-        const children = [...LAYERS.children];
-        const allOff = children.length > 0 && children.every(ch => {
-          const r = ch.getBoundingClientRect();
-          return r.right < rect.left || r.left > rect.right || r.bottom < rect.top || r.top > rect.bottom;
-        });
-        if (allOff) console.warn('[XML][diag] All items appear off-screen (coords/scale issue).');
-      }
-        
-        return builtCount;
-      }
-    
-      function play(animName){
-        if (!sceneRegistry) return;
-        const key = (animName || 'In').toLowerCase();
-        for (const [el, running] of sceneRegistry.activeAnims){
-          try { running.cancel(); } catch(e){}
-          sceneRegistry.activeAnims.delete(el);
-        }
-        for (const [el, trackMap] of sceneRegistry.tracks){
-          const def = trackMap.get(key);
-          if (!def || !def.frames.length || def.duration <= 0) continue;
-          const anim = el.animate(def.frames, { duration: def.duration, fill: 'forwards', easing: def.easing });
-          sceneRegistry.activeAnims.set(el, anim);
-        }
-      }
-    
-      // ---- scene lookup that works with name/scenename (any casing) -----------
-      function findSceneByName(dom, wanted){
-        if (!wanted) return dom.querySelector('Scene') || dom.querySelector('scene') || null;
-        const scenes = dom.querySelectorAll('Scene, scene');
-        wanted = wanted.toLowerCase();
-        for (const sc of scenes){
-          const a = attrsOf(sc);
-          const val = (a.scenename || a.name || '').toLowerCase();
-          if (val === wanted) return sc;
-        }
-        return null;
-      }
-    
-      // expose helpers (always available)
-      window.playXML = play;
-      window.setXMLScene = (name) => {
-        if (!window._xmlDOM) return;
-        const next = findSceneByName(window._xmlDOM, name) || findSceneByName(window._xmlDOM, null);
-        if (!next) return;
-        const count = renderScene(next);
-        play('InitialPosition');
-        setTimeout(() => play('In'), 10);
-        if (count > 0) document.body.classList.add('xmlMode');
-      };
-    
-      window.loadXML = async (url, scene, autoplay) => {
-        console.log('[WS][xml] loading', url);
-        let res;
-        try { res = await fetch(url, {cache:'no-store'}); }
-        catch(e){ console.error('[WS][xml] fetch failed:', e); return; }
-        if (!res.ok){ console.error('[WS][xml] HTTP', res.status, res.statusText); return; }
-    
-        const xmlText = await res.text();
-        const dom = new DOMParser().parseFromString(xmlText, 'text/xml');
-        const parseErr = dom.querySelector('parsererror');
-        if (parseErr){ console.error('[WS][xml] parse error:', parseErr.textContent?.trim()); return; }
-        window._xmlDOM = dom;
-    
-        const target = findSceneByName(dom, scene) || findSceneByName(dom, null);
-        if (!target){ console.warn('[WS][xml] no <Scene>'); return; }
-    
-        const count = renderScene(target);
-        play('InitialPosition');
-        setTimeout(() => play(autoplay || 'In'), 10);
-    
-        if (count > 0) document.body.classList.add('xmlMode');
-      };
-    
-      // Auto-load if ?xml= is present
-      const xmlUrl = params.get('xml');
-      const initialScene = params.get('scene') || null;
-      const autoPlayName = (params.get('autoplay') || 'In');
-      if (xmlUrl) { window.loadXML(xmlUrl, initialScene, autoPlayName); }
-    })();
-    
-    /* ================= Utilities ================= */
-    const qs = (s) => document.querySelector(s);
-    const pad2 = (n) => String(n).padStart(2, '0');
-
-    /* ================= DOM refs ================= */
-    const gameClockEl = qs('#gameClock');
-    const todEl = qs('#timeOfDay');
-    const homeScoreEl = qs('#homeScore');
-    const awayScoreEl = qs('#awayScore');
-
-    /* ================= Local Game Clock (fallback when no server) ================= */
-    let local = { running:false, startTime:0, carry:0 };
-
-    /* ================= Network Clock (authoritative when present) ================= */
-    let net = null; // { running, startEpochMs, carryMs }
-    let skewMs = 0; // client_now - server_now
-
-    function computeDisplayFromClock(clock){
-      const nowMs = Date.now() - (net ? skewMs : 0);
-      const elapsed = (clock.running ? (nowMs - clock.startEpochMs) : 0) + (clock.carryMs || 0);
-      const total = Math.max(0, Math.floor(elapsed / 1000));
-      return `${pad2(Math.floor(total/60))}:${pad2(total%60)}`;
+  function renderScene(sceneEl){
+    if (sceneRegistry?.activeAnims){
+      for (const a of sceneRegistry.activeAnims.values()) { try{a.cancel();}catch{} }
     }
+    sceneRegistry={tracks:new Map(), activeAnims:new Map()};
+    window._xmlByName = Object.create(null);
+    LAYERS.innerHTML='';
 
-    /* ===== RAF: update visible time (both built-in and XML layer if present) ===== */
-    const tickGameClock = () => {
-      let display;
-      if (net) {
-        display = computeDisplayFromClock({
-          running: net.running, startEpochMs: net.startEpochMs, carryMs: net.carryMs
-        });
-      } else {
-        const now = Date.now();
-        const elapsed = (local.running ? (now - local.startTime) : 0) + local.carry;
-        const total = Math.floor(elapsed / 1000);
-        display = `${pad2(Math.floor(total/60))}:${pad2(total%60)}`;
-      }
-      gameClockEl.textContent = display;
-
-      // mirror to XML item "GameTime" if present
-      const by = window._xmlByName || {};
-      if (by.GameTime) by.GameTime.textContent = display;
-
-      requestAnimationFrame(tickGameClock);
-    };
-    requestAnimationFrame(tickGameClock);
-
-    /* ===== Time of day (uses skew if available) ===== */
-    const tickTOD = () => {
-      const now = new Date(Date.now() - (net ? skewMs : 0));
-      const str = `${pad2(now.getHours())}:${pad2(now.getMinutes())}:${pad2(now.getSeconds())}`;
-      todEl.textContent = str;
-      const by = window._xmlByName || {};
-      if (by.TOD) by.TOD.textContent = str;
-    };
-    tickTOD(); setInterval(tickTOD, 1000);
-
-    /* ===== Local-only score bumpers ===== */
-    const bump = (el, d) => { if (net) return; const v = Math.max(0, (parseInt(el.textContent,10)||0) + d); el.textContent = v; };
-
-    /* ===== Buttons ===== */
-    qs('#playPause').addEventListener('click', () => (local.running ? pauseClock() : startClock()));
-    qs('#reset').addEventListener('click', resetClock);
-    qs('#homePlus').addEventListener('click', () => bump(homeScoreEl, +1));
-    qs('#homeMinus').addEventListener('click', () => bump(homeScoreEl, -1));
-    qs('#awayPlus').addEventListener('click', () => bump(awayScoreEl, +1));
-    qs('#awayMinus').addEventListener('click', () => bump(awayScoreEl, -1));
-    qs('#fullBtn').addEventListener('click', async () => {
-      const el = qs('#board');
-      if (!document.fullscreenElement) { await el.requestFullscreen().catch(()=>{}); }
-      else { await document.exitFullscreen().catch(()=>{}); }
+    // Base size from a Panel (if any)
+    let baseW=512, baseH=288;
+    const p = [...sceneEl.querySelectorAll('Item, item')].find(n => {
+      const a=attrsOf(n); const pf=(a.prefab||a.type||'').toLowerCase(); return pf==='panel';
     });
-
-    function startClock(){ if (net || local.running) return; local.running = true; local.startTime = Date.now(); qs('#playPause').textContent='⏸ Pause'; }
-    function pauseClock(){ if (net || !local.running) return; local.running = false; local.carry += Date.now() - local.startTime; qs('#playPause').textContent='▶︎ Start'; }
-    function resetClock(){ if (net) return; local = { running:false, startTime:0, carry:0 }; gameClockEl.textContent='00:00'; qs('#playPause').textContent='▶︎ Start'; }
-
-    /* ===== Query params (placeholders) ===== */
-    const params = __params;
-    const setImg = (id, url) => {
-      const el = qs(id);
-      if (url) { el.src = url; el.style.visibility = 'visible'; }
-      else { el.style.visibility = 'hidden'; }
-    };
-    const setText = (id, val) => { if (val != null) qs(id).textContent = val; };
-
-    setText('#homeName', params.get('homeName') || '');
-    setText('#awayName', params.get('awayName') || '');
-    setImg('#homeLogo', params.get('homeLogo'));
-    setImg('#awayLogo', params.get('awayLogo'));
-    setImg('#sponsorLogo', params.get('sponsor'));
-
-    if (params.has('home')) homeScoreEl.textContent = String(parseInt(params.get('home'),10) || 0);
-    if (params.has('away')) awayScoreEl.textContent = String(parseInt(params.get('away'),10) || 0);
-
-    if ((params.get('theme')||'').toLowerCase()==='light'){
-      document.documentElement.style.setProperty('--bg','#f7f7f9');
-      document.documentElement.style.setProperty('--fg','#0b0b0b');
-      document.documentElement.style.setProperty('--muted','#4a4a4a');
-      document.documentElement.style.setProperty('--digit-shadow','0 0 12px rgba(0,0,0,.12)');
+    if (p){
+      const a=attrsOf(p);
+      baseW=getNum(a,'width','w','sizex')||512;
+      baseH=getNum(a,'height','h','sizey')||288;
     }
+    const sx=TARGET_W/baseW, sy=TARGET_H/baseH;
 
-    // Default placeholders (ensure visibility even if query omitted)
-    if (!qs('#homeLogo').src){
-      const el = qs('#homeLogo');
-      el.src = 'data:image/svg+xml;utf8,' + encodeURIComponent(
-        `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 220 272">
-           <rect width="100%" height="100%" rx="24" fill="#1976d2"/>
-           <text x="50%" y="55%" text-anchor="middle" fill="#fff" font-size="140" font-family="Arial, Helvetica, sans-serif">H</text>
-         </svg>`
-      );
-      el.style.visibility = 'visible';
-    }
-    if (!qs('#awayLogo').src){
-      const el = qs('#awayLogo');
-      el.src = 'data:image/svg+xml;utf8,' + encodeURIComponent(
-        `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 220 272">
-           <rect width="100%" height="100%" rx="24" fill="#c62828"/>
-           <text x="50%" y="55%" text-anchor="middle" fill="#fff" font-size="140" font-family="Arial, Helvetica, sans-serif">A</text>
-         </svg>`
-      );
-      el.style.visibility = 'visible';
-    }
-    if (!qs('#sponsorLogo').src){
-      const el = qs('#sponsorLogo');
-      el.src = 'data:image/svg+xml;utf8,' + encodeURIComponent(
-        `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 520 254">
-           <rect width="100%" height="100%" fill="none"/>
-           <text x="50%" y="55%" text-anchor="middle" fill="#e0e0e0" font-size="64" font-family="Arial, Helvetica, sans-serif">YOUR SPONSOR</text>
-         </svg>`
-      );
-      el.style.visibility = 'visible';
-    }
+    let built=0;
+    for (const it of sceneEl.querySelectorAll('Item, item')){
+      const a=attrsOf(it);
+      const prefab=(a.prefab||a.type||'unknown').toLowerCase();
+      if (prefab==='animationprefab') continue;
 
-    /* ================= WebSocket sync (read-only client) ================= */
-    (function(){
-      const defaultWS =
-        __params.get('ws') ||
-        (location.protocol.startsWith('http')
-          ? (location.protocol === 'https:' ? 'wss://' : 'ws://') + location.host + '/ws'
-          : ''); // file:// → empty; pass ?ws=ws://localhost:PORT/ws
-      const wsUrl = defaultWS;
-      let ws;
+      const name = getStr(a,'name') || (a.prefab || 'Item');
+      const x=getNum(a,'x'), y=getNum(a,'y'), w=getNum(a,'width','w','sizex'), h=getNum(a,'height','h','sizey');
+      const leftPct = toPct(x*sx, TARGET_W), topPct = toPct(y*sy, TARGET_H);
+      const wPct = toPct((w||0)*sx, TARGET_W), hPct = toPct((h||0)*sy, TARGET_H);
 
-      function connectWS(){
-        if (!wsUrl) {
-          console.warn('[WS] no URL; pass ?ws=ws://localhost:5000/ws');
-          return;
-        }
+      let elTag = prefab==='image' ? 'img' : 'div';
+      const el = document.createElement(elTag);
+      el.className='item';
+      el.style.left=leftPct+'%'; el.style.top=topPct+'%';
+      el.style.width=wPct+'%';  el.style.height=hPct+'%';
+      el.dataset.itemName=name;
 
-        console.info('[WS] connecting to', wsUrl);
-        ws = new WebSocket(wsUrl);
+      // z-order defaults (Panel < Image < Text)
+      let z = prefab==='panel' ? 0 : prefab==='image' ? 1 : 2;
+      const zAttr=+(a.z ?? a.order ?? a.layer ?? '');
+      if (!Number.isNaN(zAttr)) z = zAttr;
+      el.style.zIndex=String(z);
 
-        ws.addEventListener('open', () => {
-          console.info('[WS] open');
-          const c = document.getElementById('controls');
-          if (c && (__params.get('clean') === '1' || __params.has('ws'))) c.style.display = 'none';
-
-          const hello = { type:'hello', role:'viewer' };
-          ws.send(JSON.stringify(hello));
-          wsLog('→', hello);
-        });
-
-        ws.addEventListener('message', (evt) => {
-          let msg;
-          try { msg = JSON.parse(evt.data); }
-          catch(e){ console.warn('[WS] bad JSON', evt.data); return; }
-          wsLog('←', msg);
-          handleServerMessage(msg);
-        });
-
-        // log any future sends automatically
-        const _send = ws.send.bind(ws);
-        ws.send = (data) => {
-          try { wsLog('→', JSON.parse(data)); } catch {}
-          return _send(data);
-        };
-
-        ws.addEventListener('close', () => { console.warn('[WS] close'); setTimeout(connectWS, 1000); });
-        ws.addEventListener('error', () => { console.error('[WS] error'); try{ ws.close(); }catch(_){} });
+      // Prefab specifics
+      if (prefab==='panel'){
+        const bg=parseColor(getStr(a,'imagecolor','color','bg'));
+        if (bg) el.style.background=bg;
+        el.style.pointerEvents='none';
+      } else if (prefab==='image'){
+        const raw = getStr(a,'defaultimage','image','src');
+        const src = raw ? new URL(raw, window._xmlBase || location.href).href : '';
+        if (src) el.src = src;
+        el.style.objectFit='contain';
+        el.style.filter='drop-shadow(0 4px 8px rgba(0,0,0,.35))';
+        el.alt=name;
+      } else if (prefab==='text'){
+        el.classList.add('text');
+        const color = parseColor(getStr(a,'textcolor','color')) || 'rgba(255,255,255,.95)';
+        const font  = parseFont(getStr(a,'font','fontfamily'));
+        const align = getStr(a,'textalignment','alignment','align');
+        el.style.color=color;
+        el.style.fontFamily=font.family+', monospace';
+        el.style.fontWeight=700;
+        el.classList.add(...alignClasses(align).split(' '));
+        el.textContent = getStr(a,'defaulttext','text','value','content') || '';
+        // robust px sizing
+        const minPx=(getNum(a,'minfontsize','minfont','minsize')||8)  * (TARGET_H/(baseH||TARGET_H));
+        const maxPx=(getNum(a,'maxfontsize','maxfont','maxsize')||200)* (TARGET_H/(baseH||TARGET_H));
+        const px=Math.max(minPx, Math.min(Math.round(((h||0)*sy)*0.70), maxPx));
+        el.style.fontSize=px+'px';
+        el.style.textShadow='0 0 12px rgba(0,0,0,.35)';
       }
 
-      function handleServerMessage(msg){
-        switch ((msg.type||'').toLowerCase()){
-          case 'state':{
-            if (typeof msg.serverNowMs === 'number') skewMs = Date.now() - msg.serverNowMs;
+      if (DIAG){ tint(el,prefab); label(el,name); }
+      LAYERS.appendChild(el);
+      window._xmlByName[name]=el;
+      built++;
 
-            if (msg.teams){
-              const t = msg.teams;
-              if (t.homeName !== undefined) qs('#homeName').textContent = t.homeName || '';
-              if (t.awayName !== undefined) qs('#awayName').textContent = t.awayName || '';
-              if (t.homeLogo){ const el = qs('#homeLogo'); el.src = t.homeLogo; el.style.visibility='visible'; }
-              if (t.awayLogo){ const el = qs('#awayLogo'); el.src = t.awayLogo; el.style.visibility='visible'; }
-              if (t.sponsor ){ const el = qs('#sponsorLogo'); el.src = t.sponsor;  el.style.visibility='visible'; }
-
-              // mirror to XML if present
-              const by = window._xmlByName || {};
-              if (by.ClubLogo  && t.homeLogo) by.ClubLogo.src  = t.homeLogo;
-              if (by.ClubLogo2 && t.awayLogo) by.ClubLogo2.src = t.awayLogo;
-              if (by.SponsorLogo && t.sponsor) by.SponsorLogo.src = t.sponsor;
-              if (by.HomeTeam) by.HomeTeam.textContent = t.homeName ?? '';
-              if (by.AwayTeam) by.AwayTeam.textContent = t.awayName ?? '';
-            }
-            if (msg.score){
-              if (typeof msg.score.home === 'number') homeScoreEl.textContent = String(msg.score.home);
-              if (typeof msg.score.away === 'number') awayScoreEl.textContent = String(msg.score.away);
-
-              const by = window._xmlByName || {};
-              if (by.HomeScore && typeof msg.score.home === 'number') by.HomeScore.textContent = String(msg.score.home);
-              if (by.AwayScore && typeof msg.score.away === 'number') by.AwayScore.textContent = String(msg.score.away);
-            }
-            if (msg.clock){
-              net = { running:!!msg.clock.running, startEpochMs:msg.clock.startEpochMs||0, carryMs:msg.clock.carryMs||0 };
-              if (typeof msg.serverNowMs === 'number') skewMs = Date.now() - msg.serverNowMs;
-            }
-
-            // XML loader/scene autoplay if provided in state
-            if (msg.xml && msg.xml.url && typeof window.loadXML === 'function'){
-              window.loadXML(msg.xml.url, msg.xml.scene, msg.xml.autoplay).catch(()=>{});
-            }
-            if (msg.scene && typeof window.setXMLScene === 'function'){
-              window.setXMLScene(msg.scene);
-              if (msg.autoplay && typeof window.playXML === 'function') window.playXML(msg.autoplay);
-            }
-            break;
-          }
-          case 'teams':{
-            const t = msg;
-            const by = window._xmlByName || {};
-            if (t.homeName !== undefined) qs('#homeName').textContent = t.homeName || '';
-            if (t.awayName !== undefined) qs('#awayName').textContent = t.awayName || '';
-            if (t.homeLogo){ qs('#homeLogo').src = t.homeLogo; if (by.ClubLogo) by.ClubLogo.src = t.homeLogo; }
-            if (t.awayLogo){ qs('#awayLogo').src = t.awayLogo; if (by.ClubLogo2) by.ClubLogo2.src = t.awayLogo; }
-            if (t.sponsor ){ qs('#sponsorLogo').src = t.sponsor; if (by.SponsorLogo) by.SponsorLogo.src = t.sponsor; }
-            if (by.HomeTeam) by.HomeTeam.textContent = t.homeName ?? '';
-            if (by.AwayTeam) by.AwayTeam.textContent = t.awayName ?? '';
-            break;
-          }
-          case 'score':{
-            if (typeof msg.home === 'number') { homeScoreEl.textContent = String(msg.home); if (window._xmlByName?.HomeScore) window._xmlByName.HomeScore.textContent = String(msg.home); }
-            if (typeof msg.away === 'number') { awayScoreEl.textContent = String(msg.away); if (window._xmlByName?.AwayScore) window._xmlByName.AwayScore.textContent = String(msg.away); }
-            break;
-          }
-          case 'clock':{
-            net = { running:!!msg.running, startEpochMs:msg.startEpochMs||0, carryMs:msg.carryMs||0 };
-            if (typeof msg.serverNowMs === 'number') skewMs = Date.now() - msg.serverNowMs;
-            break;
-          }
-          case 'xml':{
-            if (msg.url && typeof window.loadXML === 'function'){
-              window.loadXML(msg.url, msg.scene, msg.autoplay).catch(()=>{});
-            }
-            break;
-          }
-          case 'scene':{
-            if (typeof window.setXMLScene === 'function'){
-              window.setXMLScene(msg.name || msg.scene || '');
-              if (msg.autoplay && typeof window.playXML === 'function') window.playXML(msg.autoplay);
-            }
-            break;
-          }
-          case 'anim':{
-            if (typeof window.playXML === 'function') window.playXML(msg.name || 'In');
-            break;
-          }
+      // Animations
+      const animNodes=[...it.querySelectorAll(':scope > Animation, :scope > animation')];
+      if (animNodes.length){
+        const tr=new Map();
+        for (const an of animNodes){
+          const aa=attrsOf(an);
+          const nm=(getStr(aa,'name')||'Custom').toLowerCase();
+          const xs=parseNumList(getStr(aa,'x')), ys=parseNumList(getStr(aa,'y')), ts=parseNumList(getStr(aa,'duration','time','t'));
+          const {frames,duration}=buildKeyframes(xs,ys,ts,sx,sy);
+          let easing='ease-in-out'; if(/^in$/i.test(nm))easing='cubic-bezier(.2,.8,.2,1)'; if(/^out$/i.test(nm))easing='cubic-bezier(.4,0,.6,1)';
+          tr.set(nm,{frames,duration,easing});
+        }
+        (sceneRegistry.tracks.set(el,tr));
+        const init=tr.get('initialposition');
+        if (init?.frames?.length){
+          const last=init.frames.at(-1);
+          if (last.left) el.style.left=last.left;
+          if (last.top)  el.style.top =last.top;
         }
       }
+    }
 
-      connectWS();
-    })();
-  </script>
+    if (DIAG){
+      const rect=LAYERS.getBoundingClientRect();
+      const kids=[...LAYERS.children];
+      const allOff = kids.length>0 && kids.every(ch=>{
+        const r=ch.getBoundingClientRect();
+        return r.right<rect.left||r.left>rect.right||r.bottom<rect.top||r.top>rect.bottom;
+      });
+      if (allOff) console.warn('[XML][diag] All items appear off-screen.');
+    }
+
+    return built;
+  }
+
+  function play(animName){
+    if (!sceneRegistry) return;
+    const key=(animName||'In').toLowerCase();
+    for (const [el,run] of sceneRegistry.activeAnims){ try{run.cancel();}catch{} sceneRegistry.activeAnims.delete(el); }
+    for (const [el,tracks] of sceneRegistry.tracks){
+      const def=tracks.get(key);
+      if (!def || !def.frames.length || def.duration<=0) continue;
+      const a=el.animate(def.frames,{duration:def.duration,fill:'forwards',easing:def.easing});
+      sceneRegistry.activeAnims.set(el,a);
+    }
+  }
+
+  function findSceneByName(dom,wanted){
+    if (!wanted) return dom.querySelector('Scene, scene');
+    wanted=wanted.toLowerCase();
+    for (const sc of dom.querySelectorAll('Scene, scene')){
+      const a=attrsOf(sc); const v=(a.scenename||a.name||'').toLowerCase();
+      if (v===wanted) return sc;
+    }
+    return null;
+  }
+
+  window.playXML = play;
+  window.setXMLScene = (name)=>{
+    if (!window._xmlDOM) return;
+    const next=findSceneByName(window._xmlDOM,name) || findSceneByName(window._xmlDOM,null);
+    if (!next) return;
+    const count=renderScene(next);
+    play('InitialPosition'); setTimeout(()=>play('In'),10);
+  };
+
+  window.loadXML = async (url, scene, autoplay)=>{
+    console.log('[XML] loading', url);
+    let res; try{ res=await fetch(url,{cache:'no-store'});}catch(e){console.error('[XML] fetch fail',e);return;}
+    if (!res.ok){ console.error('[XML] HTTP',res.status,res.statusText); return; }
+    const xmlText=await res.text();
+    const dom=new DOMParser().parseFromString(xmlText,'text/xml');
+    if (dom.querySelector('parsererror')){ console.error('[XML] parse error'); return; }
+    window._xmlDOM=dom;
+    window._xmlBase=new URL(url, location.href);
+
+    const target=findSceneByName(dom, scene) || findSceneByName(dom,null);
+    if (!target){ console.warn('[XML] no <Scene>'); return; }
+    renderScene(target);
+    play('InitialPosition'); setTimeout(()=>play(autoplay||'In'),10);
+  };
+
+  // auto-load if provided via query
+  const xmlUrl=P.get('xml'); const initialScene=P.get('scene')||null; const autoPlay=P.get('autoplay')||'In';
+  if (xmlUrl){ window.loadXML(xmlUrl, initialScene, autoPlay); }
+})();
+
+/* ================= WS wiring to your XML item names ================= */
+// Server fields: teams {homeName, awayName, homeLogo, awayLogo, sponsor}
+//                score {home, away}
+//                clock {running, startEpochMs, carryMs}
+//                xml   {url, scene, autoplay}
+let net=null, skewMs=0;
+
+// update tick: drives GameTime + TOD if present
+(function tick(){
+  if (window._xmlByName?.GameTime && net){
+    const nowMs = Date.now() - (net ? skewMs : 0);
+    const elapsed = (net.running ? (nowMs - net.startEpochMs) : 0) + (net.carryMs||0);
+    const total = Math.max(0, Math.floor(elapsed/1000));
+    const mm = String(Math.floor(total/60)).padStart(2,'0');
+    const ss = String(total%60).padStart(2,'0');
+    window._xmlByName.GameTime.textContent = `${mm}:${ss}`;
+  }
+  if (window._xmlByName?.TOD){
+    const now = new Date(Date.now() - (net ? skewMs : 0));
+    const p=n=>String(n).padStart(2,'0');
+    window._xmlByName.TOD.textContent = `${p(now.getHours())}:${p(now.getMinutes())}:${p(now.getSeconds())}`;
+  }
+  requestAnimationFrame(tick);
+})();
+
+// helpers to set images/text safely
+function setXmlImage(url, ...names){
+  if (!url) return;
+  const by = window._xmlByName || {};
+  for (const n of names){
+    const el = by[n]; if (el && el.tagName==='IMG'){ el.src=url; el.style.visibility='visible'; return; }
+  }
+}
+function setXmlText(val, ...names){
+  if (val==null) return;
+  const by = window._xmlByName || {};
+  for (const n of names){
+    const el = by[n]; if (el){ el.textContent=String(val); return; }
+  }
+}
+
+function applyTeams(t){
+  if (!t) return;
+  setXmlImage(t.homeLogo, 'ClubLogo');      // left logo
+  setXmlImage(t.awayLogo, 'ClubLogo2');     // right logo
+  setXmlImage(t.sponsor,  'SponsorLogo');   // sponsor
+  setXmlText (t.homeName, 'HomeTeam');
+  setXmlText (t.awayName, 'AwayTeam');
+}
+function applyScore(s){
+  if (!s) return;
+  if (Number.isFinite(s.home)) setXmlText(s.home, 'HomeScore');
+  if (Number.isFinite(s.away)) setXmlText(s.away, 'AwayScore');
+}
+
+/* connect WS */
+(function(){
+  const wsUrl = P.get('ws') ||
+    (location.protocol.startsWith('http')
+      ? (location.protocol==='https:'?'wss://':'ws://') + location.host + '/ws'
+      : '');
+
+  if (!wsUrl){ console.warn('[WS] no URL; pass ?ws=ws://host:port/ws'); return; }
+
+  let ws;
+  const connect = ()=>{
+    ws = new WebSocket(wsUrl);
+    ws.addEventListener('open', ()=>{
+      const hello={type:'hello', role:'viewer'}; ws.send(JSON.stringify(hello)); wsLog('→', hello);
+    });
+    ws.addEventListener('message', (evt)=>{
+      let msg; try{ msg=JSON.parse(evt.data); }catch{ return; }
+      wsLog('←', msg);
+      switch ((msg.type||'').toLowerCase()){
+        case 'state':
+          if (typeof msg.serverNowMs==='number') skewMs = Date.now()-msg.serverNowMs;
+          applyTeams(msg.teams);
+          applyScore(msg.score);
+          if (msg.clock) net = { running:!!msg.clock.running, startEpochMs:msg.clock.startEpochMs||0, carryMs:msg.clock.carryMs||0 };
+          if (msg.xml?.url) window.loadXML?.(msg.xml.url, msg.xml.scene, msg.xml.autoplay);
+          if (msg.scene) window.setXMLScene?.(msg.scene);
+          break;
+        case 'teams': applyTeams(msg); break;
+        case 'score': applyScore(msg); break;
+        case 'clock':
+          net = { running:!!msg.running, startEpochMs:msg.startEpochMs||0, carryMs:msg.carryMs||0 };
+          if (typeof msg.serverNowMs==='number') skewMs = Date.now()-msg.serverNowMs;
+          break;
+        case 'xml':
+          if (msg.url) window.loadXML?.(msg.url, msg.scene, msg.autoplay);
+          break;
+        case 'scene':
+          window.setXMLScene?.(msg.name || msg.scene || '');
+          if (msg.autoplay) window.playXML?.(msg.autoplay);
+          break;
+        case 'anim':
+          window.playXML?.(msg.name || 'In');
+          break;
+      }
+    });
+    ws.addEventListener('close', ()=> setTimeout(connect, 1000));
+    ws.addEventListener('error', ()=> { try{ws.close();}catch{} });
+  };
+  connect();
+})();
+</script>
 </body>
 </html>
