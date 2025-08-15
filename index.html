@@ -28,6 +28,7 @@
     position:absolute; inset:0;
     pointer-events:none;
     z-index:12;
+    container-type:size; 
   }
   .xml-layers .item{ position:absolute; overflow:hidden; }
   .xml-layers .text{
@@ -62,6 +63,22 @@ function wsLog(dir, msg){
   const LAYERS = document.getElementById('xmlLayers');
   const TARGET_W=1024, TARGET_H=576;
   const DIAG = P.has('diag');
+
+  const HAS_CQ = CSS.supports('width', '1cqw'); // container queries supported?
+  let ro = null;
+  if (!HAS_CQ && 'ResizeObserver' in window){
+    ro = new ResizeObserver(() => {
+      const boardH = LAYERS.getBoundingClientRect().height;
+      LAYERS.querySelectorAll('.text').forEach(el => {
+        const minPx = +el.dataset.minPx || 8;
+        const maxPx = +el.dataset.maxPx || 200;
+        const hPct  = parseFloat(el.style.height) || 0; // % we set on the element
+        const px = Math.max(minPx, Math.min(Math.round((hPct/100)*boardH*0.70), maxPx));
+        el.style.fontSize = px + 'px';
+      });
+    });
+    ro.observe(LAYERS);
+  }
 
   // Debug helpers
   function tint(el, prefab){
@@ -170,22 +187,40 @@ function wsLog(dir, msg){
         el.style.objectFit='contain';
         el.style.filter='drop-shadow(0 4px 8px rgba(0,0,0,.35))';
         el.alt=name;
-      } else if (prefab==='text'){
+      } else if (prefab === 'text'){
         el.classList.add('text');
+      
+        // existing style bits
         const color = parseColor(getStr(a,'textcolor','color')) || 'rgba(255,255,255,.95)';
         const font  = parseFont(getStr(a,'font','fontfamily'));
         const align = getStr(a,'textalignment','alignment','align');
-        el.style.color=color;
-        el.style.fontFamily=font.family+', monospace';
-        el.style.fontWeight=700;
+        el.style.color = color;
+        el.style.fontFamily = font.family + ', monospace';
+        el.style.fontWeight = 700;
         el.classList.add(...alignClasses(align).split(' '));
         el.textContent = getStr(a,'defaulttext','text','value','content') || '';
-        // robust px sizing
-        const minPx=(getNum(a,'minfontsize','minfont','minsize')||8)  * (TARGET_H/(baseH||TARGET_H));
-        const maxPx=(getNum(a,'maxfontsize','maxfont','maxsize')||200)* (TARGET_H/(baseH||TARGET_H));
-        const px=Math.max(minPx, Math.min(Math.round(((h||0)*sy)*0.70), maxPx));
-        el.style.fontSize=px+'px';
-        el.style.textShadow='0 0 12px rgba(0,0,0,.35)';
+      
+        // --- responsive sizing (POINT 3) ---
+        const minPx = (getNum(a,'minfontsize','minfont','minsize') || 8)  * (TARGET_H/(baseH||TARGET_H));
+        const maxPx = (getNum(a,'maxfontsize','maxfont','maxsize') || 200)* (TARGET_H/(baseH||TARGET_H));
+      
+        // hPct already computed above from element height:
+        //   const wPct = toPct((w||0)*sx, TARGET_W), hPct = toPct((h||0)*sy, TARGET_H);
+        el.style.setProperty('--box-h-p', hPct);   // numeric percent (e.g. "12.5")
+        el.dataset.minPx = String(minPx);
+        el.dataset.maxPx = String(maxPx);
+      
+        if (HAS_CQ){
+          // Scales with the board because .xml-layers has container-type:size
+          el.style.fontSize = `clamp(${minPx}px, calc(var(--box-h-p) * 1cqh * 0.70), ${maxPx}px)`;
+        } else {
+          // Fallback for browsers without container units; ResizeObserver (point 2) keeps this updated
+          const boardH = LAYERS.getBoundingClientRect().height;
+          const px = Math.max(minPx, Math.min(Math.round((hPct/100)*boardH*0.70), maxPx));
+          el.style.fontSize = px + 'px';
+        }
+      
+        el.style.textShadow = '0 0 12px rgba(0,0,0,.35)';
       }
 
       if (DIAG){ tint(el,prefab); label(el,name); }
