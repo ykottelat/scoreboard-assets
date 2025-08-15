@@ -30,10 +30,11 @@
     z-index:12;
     container-type:size; 
   }
-  .xml-layers .item,
-  .xml-layers .text { box-sizing: border-box; }
-  .xml-layers .text { padding: 0 .25rem; }
-  .xml-layers img.item { display: block; }
+
+  .xml-layers .item{ position:absolute; overflow:hidden; }
+  .xml-layers .text{
+    display:flex; line-height:1; padding:0 .25rem; word-break:break-word;
+  }
   .align-left{justify-content:flex-start;text-align:left}
   .align-center{justify-content:center;text-align:center}
   .align-right{justify-content:flex-end;text-align:right}
