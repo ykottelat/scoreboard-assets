@@ -37,11 +37,11 @@
 			<Animation Name="Next" X="2;-570;2" Y="316;316;316" Duration="0;1;2"/>
 			<Animation Name="Out" X="2;-570" Y="316;316" Duration="0;1"/>
 		</Item>
-		<Item prefab="Image" name="Picture" x="1242" y="4" width="218" height="280" defaultimage="/assets/placeholder.png" animator="SlideIn">
-			<Animation name="In" x="1242;786" y="4;4" duration="0;1"/>
-			<Animation name="InitialPosition" x="1242;1242" y="4;4" duration="0;0.01"/>
-			<Animation name="Next" x="786;1242;786" y="4;4;4" duration="0;1;2"/>
-			<Animation name="Out" x="786;1242" y="4;4" duration="0;1"/>
+		<Item prefab="Image" Name="Picture" X="1242" Y="4" Width="218" Height="280" Defaultimage="/assets/placeholder.png" animator="SlideIn">
+			<Animation Name="In" X="1242;786" Y="4;4" Duration="0;1"/>
+			<Animation Name="InitialPosition" X="1242;1242" Y="4;4" Duration="0;0.01"/>
+			<Animation Name="Next" X="786;1242;786" Y="4;4;4" Duration="0;1;2"/>
+			<Animation Name="Out" X="786;1242" Y="4;4" Duration="0;1"/>
 		</Item>
 	</Scene>
 </Overlay>
