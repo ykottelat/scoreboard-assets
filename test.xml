@@ -46,7 +46,22 @@
 			<Animation Name="Out" X="568;1460" Y="4;4" Duration="0;1"/>
 		</Item>
 	</Scene>
+	<Scene scenename="Goal">
+		<Item prefab="Panel" name="Base" x="0" y="0" width="1024" height="576" imagecolor="49;77;121;255" />
+		<Item prefab="Image" name="ClubLogo" x="11" y="-6" width="110" height="138" defaultimage="/assets/placeholder.png" fromparameter="0" animator="None"/>
+		<Item prefab="Text" name="NameGoal" x="2" y="-158"  width="285" height="130" textcolor="255;255;255;255" defaulttext="XXX Yyy" font="Droid Sans Mono;25" maxfontsize="150" minfontsize="1" fromparameter="1" animator="None"/>
+		<Item prefab="Text" name="TextGoal" x="-40" y="-2"  width="499" height="75" textcolor="255;255;255;255" defaulttext="Goal" font="Droid Sans Mono;25" maxfontsize="150" minfontsize="1" fromparameter="1" animator="None"/>
+		<Item prefab="Image" name="PictureGoal" x="290" y="-4" width="218" height="280" defaultimage="/assets/placeholder.png" fromparameter="1" animator="None"/>
+	</Scene>
+	<Scene scenename="GoalVideo">
+		<Item prefab="Panel" name="Base" x="0" y="0" width="1024" height="576" imagecolor="0;0;0;255" />
+		<Item prefab="VideoPlayerGoal" name="VideoPlayer" placeholder="VideoPlace2" x="0" y="0" width="1024" height="576" />
+		<Item prefab="Image" name="ClubLogo" x="11" y="-6" width="110" height="138" defaultimage="C:\ImagesTableau\Logo\FCVT.png" fromparameter="0" animator="None"/>
+		<Item prefab="Text" name="NameGoal" x="2" y="-158"  width="285" height="130" textcolor="255;255;255;255" defaulttext="XXX Yyy" font="Droid Sans Mono;25" maxfontsize="150" minfontsize="1" fromparameter="1" animator="None"/>
+		<Item prefab="Text" name="TextGoal" x="-40" y="-2"  width="499" height="75" textcolor="255;255;255;255" defaulttext="Goal" font="Droid Sans Mono;25" maxfontsize="150" minfontsize="1" fromparameter="1" animator="None"/>
+	</Scene>
 </Overlay>
+
 
 
 
