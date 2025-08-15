@@ -31,6 +31,14 @@
     container-type:size; 
   }
 
+    /* full-board video defaults */
+  .xml-layers video{
+    display:block;
+    width:100%;
+    height:100%;
+    object-fit:cover; /* change to 'contain' if you prefer letterboxing */
+    background:#000;
+  }
   .xml-layers .item{ position:absolute; overflow:hidden; }
   .xml-layers .text{
     display:flex; line-height:1; padding:0 .25rem; word-break:break-word;box-sizing: border-box;
@@ -118,7 +126,12 @@ function wsLog(dir, msg){
   // Debug helpers
   function tint(el, prefab){
     if (!DIAG) return;
-    const c = {panel:'rgba(255,255,255,.03)', image:'rgba(0,0,0,.05)', text:'rgba(255,255,0,.08)'}[prefab] || 'transparent';
+    const c = {
+      panel:'rgba(255,255,255,.03)',
+      image:'rgba(0,0,0,.05)',
+      text:'rgba(255,255,0,.08)',
+      videoplayer:'rgba(0,0,0,.10)'   
+    }[prefab] || 'transparent';
     if (!el.style.background) el.style.background = c;
     el.style.outline = '1px dashed rgba(255,255,255,.35)';
   }
@@ -209,8 +222,12 @@ function wsLog(dir, msg){
       const x=getNum(a,'x'), y=getNum(a,'y'), w=getNum(a,'width','w','sizex'), h=getNum(a,'height','h','sizey');
       const leftPct = toPct(x*sx, TARGET_W), topPct = toPct(y*sy, TARGET_H);
       const wPct = toPct((w||0)*sx, TARGET_W), hPct = toPct((h||0)*sy, TARGET_H);
-
-      let elTag = prefab==='image' ? 'img' : 'div';
+      
+      let elTag =
+        prefab === 'image' ? 'img' :
+        (prefab === 'videoplayer' || prefab === 'video') ? 'video' :
+        'div';
+      
       const el = document.createElement(elTag);
       el.className='item';
       el.style.left=leftPct+'%'; el.style.top=topPct+'%';
@@ -268,6 +285,36 @@ function wsLog(dir, msg){
         el.dataset.maxLines = String(maxLines);
       
         el.style.textShadow = '0 0 12px rgba(0,0,0,.35)';
+      } else if (prefab === 'videoplayer' || prefab === 'video'){
+        // Full-board video: ignore XML box and pin to board edges
+        el.style.left   = '0';
+        el.style.top    = '0';
+        el.style.width  = '100%';
+        el.style.height = '100%';
+      
+        // Source (accepts Src/Video/Source/DefaultVideo)
+        const raw = getStr(a,'src','video','source','defaultvideo');
+        const src = raw ? new URL(raw, window._xmlBase || location.href).href : '';
+        if (src){ el.src = src; el.load?.(); }
+      
+        // Common flags (defaults: autoplay+muted for browser autoplay)
+        const yes = v => /^(1|true|yes)$/i.test(String(v||''));
+        el.autoplay   = a.autoplay ? yes(a.autoplay) : true;
+        el.muted      = a.muted    ? yes(a.muted)    : true;
+        el.loop       = yes(a.loop);
+        if (yes(a.controls)){ el.controls = true; el.style.pointerEvents = 'auto'; } // note: .xml-layers has pointer-events:none
+        el.playsInline = true;
+      
+        // Optional poster & fit
+        const poster = getStr(a,'poster','thumb');
+        if (poster) el.poster = new URL(poster, window._xmlBase || location.href).href;
+        const fit = (getStr(a,'fit','objectfit') || 'cover').toLowerCase();
+        el.style.objectFit = (fit === 'contain' ? 'contain' : 'cover');
+      
+        // By default sit underneath other items like a background layer
+        // (override via Z/Order/Layer in XML if you need it above)
+        // z was already computed; if you want hard default, uncomment:
+        // el.style.zIndex = '0';      
       }
 
       if (DIAG){ tint(el,prefab); label(el,name); }
@@ -414,6 +461,20 @@ function setXmlText(val, ...names){
   }
 }
 
+// 👉 Add this right here
+function setXmlVideo(url, ...names){
+  if (!url) return;
+  const by = window._xmlByName || {};
+  for (const n of names){
+    const el = by[n];
+    if (el && el.tagName === 'VIDEO'){
+      el.src = new URL(url, window._xmlBase || location.href).href;
+      el.load?.();
+      return el;
+    }
+  }
+}  
+  
 function applyTeams(t){
   if (!t) return;
   setXmlImage(t.homeLogo, 'ClubLogo');      // left logo
@@ -496,7 +557,43 @@ function applyScore(s){
           // ✅ Scene changes come through the xml message
           if (msg.url) window.loadXML?.(msg.url, msg.scene, msg.autoplay);
           break;
-      
+        
+          // 👉 Add this case
+          case 'video': {
+            // e.g. {type:'video', name:'VideoBg', src:'clip.mp4', action:'play'|'pause'|'stop'|'seek', time:12.3, loop:true, muted:false, controls:true}
+            const name = msg.name || 'VideoBg';
+            const by = window._xmlByName || {};
+            const el = by[name];
+          
+            if (el && el.tagName === 'VIDEO'){
+              if (msg.src){
+                el.src = new URL(msg.src, window._xmlBase || location.href).href;
+                el.load?.();
+              }
+              if (typeof msg.loop  === 'boolean') el.loop  = msg.loop;
+              if (typeof msg.muted === 'boolean') el.muted = msg.muted;
+          
+              // Controls note: .xml-layers has pointer-events:none; to make controls clickable, temporarily enable on the container:
+              if (typeof msg.controls === 'boolean'){
+                if (msg.controls){
+                  el.controls = true;
+                  document.getElementById('xmlLayers')?.style && (document.getElementById('xmlLayers').style.pointerEvents = 'auto');
+                } else {
+                  el.controls = false;
+                  document.getElementById('xmlLayers')?.style && (document.getElementById('xmlLayers').style.pointerEvents = 'none');
+                }
+              }
+          
+              switch ((msg.action||'').toLowerCase()){
+                case 'play':  el.play?.().catch(()=>{}); break;
+                case 'pause': el.pause?.(); break;
+                case 'stop':  el.pause?.(); el.currentTime = 0; break;
+                case 'seek':  if (Number.isFinite(msg.time)) el.currentTime = Math.max(0, msg.time); break;
+              }
+            }
+            break;
+          }
+          
         // (keep anim if your server still uses it to trigger In/Out on the current scene)
         case 'anim':
           window.playXML?.(msg.name || 'In');
