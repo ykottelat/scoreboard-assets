@@ -557,7 +557,19 @@ function applyScore(s){
           // ✅ Scene changes come through the xml message
           if (msg.url) window.loadXML?.(msg.url, msg.scene, msg.autoplay);
           break;
-        
+
+          case 'goal': {
+            // Expecting: {type:'goal', name, bib, picture, video?, hasVideo}
+            setXmlText (msg.name,    'NameGoal', 'Name');
+            setXmlImage(msg.picture, 'PictureGoal', 'Picture');
+          
+            // If the XML uses <Item Name="VideoPlayer" Prefab="VideoPlayer"/>
+            if (msg.video) {
+              setXmlVideo(msg.video, 'VideoPlayer', 'Video'); // from earlier helper
+            }
+            break;
+          }
+          
           // 👉 Add this case
           case 'video': {
             // e.g. {type:'video', name:'VideoBg', src:'clip.mp4', action:'play'|'pause'|'stop'|'seek', time:12.3, loop:true, muted:false, controls:true}
