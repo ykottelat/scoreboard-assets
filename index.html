@@ -51,6 +51,46 @@
 <script>
 /* ================= setup & tiny logger ================= */
 const P = new URLSearchParams(location.search);
+
+const TEXTS = new Set();
+
+function fitTextToBox(el){
+  if (!el) return;
+  const minPx   = +(el.dataset.minPx   || 8);
+  const maxPx   = +(el.dataset.maxPx   || 200);
+  const maxLines= +(el.dataset.maxLines|| 0); // 0 => unlimited
+  el.style.whiteSpace = 'normal';  // allow wrapping
+  el.style.overflow   = 'hidden';
+
+  const box = el.getBoundingClientRect();
+  if (box.width <= 0 || box.height <= 0) return;
+
+  let lo = minPx, hi = maxPx, best = minPx;
+  while (lo <= hi){
+    const mid = (lo + hi) >> 1;         // try a size
+    el.style.fontSize = mid + 'px';
+    // force layout
+    void el.offsetHeight;
+
+    const fitsW = el.scrollWidth  <= Math.ceil(box.width);
+    const fitsH = el.scrollHeight <= Math.ceil(box.height);
+
+    let fitsLines = true;
+    if (maxLines > 0){
+      const lh = parseFloat(getComputedStyle(el).lineHeight) || mid; // line-height:1 => ~font-size
+      const lines = Math.max(1, Math.round(el.scrollHeight / lh));
+      fitsLines = lines <= maxLines;
+    }
+
+    if (fitsW && fitsH && fitsLines){ best = mid; lo = mid + 1; }
+    else                             { hi = mid - 1; }
+  }
+  el.style.fontSize = best + 'px';
+}
+
+function fitAllText(){ TEXTS.forEach(el => fitTextToBox(el)); }
+window.addEventListener('resize', fitAllText);
+  
 const wsLogFilter = (P.get('wslog') || '*').split(',').map(s=>s.trim().toLowerCase());
 const shouldLog = t => wsLogFilter[0]==='*' || wsLogFilter.includes((t||'').toLowerCase());
 function wsLog(dir, msg){
@@ -68,17 +108,11 @@ function wsLog(dir, msg){
   const HAS_CQ = CSS.supports('width', '1cqw'); // container queries supported?
   let ro = null;
   if (!HAS_CQ && 'ResizeObserver' in window){
-    ro = new ResizeObserver(() => {
-      const boardH = LAYERS.getBoundingClientRect().height;
-      LAYERS.querySelectorAll('.text').forEach(el => {
-        const minPx = +el.dataset.minPx || 8;
-        const maxPx = +el.dataset.maxPx || 200;
-        const hPct  = parseFloat(el.style.height) || 0; // % we set on the element
-        const px = Math.max(minPx, Math.min(Math.round((hPct/100)*boardH*0.70), maxPx));
-        el.style.fontSize = px + 'px';
-      });
-    });
-    ro.observe(LAYERS);
+    let ro = null;
+    if ('ResizeObserver' in window){
+      ro = new ResizeObserver(() => fitAllText());
+      ro.observe(LAYERS);
+    }
   }
 
   // Debug helpers
@@ -224,25 +258,14 @@ function wsLog(dir, msg){
         el.classList.add(...alignClasses(align).split(' '));
         el.textContent = getStr(a,'defaulttext','text','value','content') || '';
         
-        // --- responsive sizing (POINT 3) ---
+        // --- auto-fit settings ---
         const minPx = (getNum(a,'minfontsize','minfont','minsize') || 8)  * (TARGET_H/(baseH||TARGET_H));
         const maxPx = (getNum(a,'maxfontsize','maxfont','maxsize') || 200)* (TARGET_H/(baseH||TARGET_H));
-      
-        // hPct already computed above from element height:
-        //   const wPct = toPct((w||0)*sx, TARGET_W), hPct = toPct((h||0)*sy, TARGET_H);
-        el.style.setProperty('--box-h-p', hPct);   // numeric percent (e.g. "12.5")
+        const maxLines = getNum(a,'lines','maxlines','maxlinecount') || 0; // 0 => unlimited
+        
         el.dataset.minPx = String(minPx);
         el.dataset.maxPx = String(maxPx);
-      
-        if (HAS_CQ){
-          // Scales with the board because .xml-layers has container-type:size
-          el.style.fontSize = `clamp(${minPx}px, calc(var(--box-h-p) * 1cqh * 0.7), ${maxPx}px)`;
-        } else {
-          // Fallback for browsers without container units; ResizeObserver (point 2) keeps this updated
-          const boardH = LAYERS.getBoundingClientRect().height;
-          const px = Math.max(minPx, Math.min(Math.round((hPct/100)*boardH*0.7), maxPx));
-          el.style.fontSize = px + 'px';
-        }
+        el.dataset.maxLines = String(maxLines);
       
         el.style.textShadow = '0 0 12px rgba(0,0,0,.35)';
       }
@@ -252,6 +275,12 @@ function wsLog(dir, msg){
       window._xmlByName[name]=el;
       built++;
 
+      // register for future fits and do an initial fit
+      if (prefab === 'text'){
+        TEXTS.add(el);
+        queueMicrotask(() => fitTextToBox(el)); // fit after it's in the DOM
+      }
+      
       // Animations
       const animNodes=[...it.querySelectorAll(':scope > Animation, :scope > animation')];
       if (animNodes.length){
@@ -373,10 +402,15 @@ function setXmlImage(url, ...names){
   }
 }
 function setXmlText(val, ...names){
-  if (val==null) return;
+  if (val == null) return;
   const by = window._xmlByName || {};
   for (const n of names){
-    const el = by[n]; if (el){ el.textContent=String(val); return; }
+    const el = by[n];
+    if (el){
+      el.textContent = String(val);
+      if (el.classList.contains('text')) queueMicrotask(() => fitTextToBox(el));
+      return;
+    }
   }
 }
 
