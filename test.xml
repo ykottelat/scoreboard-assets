@@ -3,7 +3,7 @@
 	<!-- A single scene that mimics the "no XML" default board -->
 	<Scene name="DefaultBoard" scenename="DefaultBoard">
 		<!-- Base panel defines coordinate system (transparent) -->
-		<Item Prefab="Panel" Name="Base" X="0" Y="0" Width="1024" Height="576" ImageColor="0;0;0;0"/>
+		<Item Prefab="Panel" Name="Base" X="0" Y="0" Width="1024" Height="576" ImageColor="0;0;0;255"/>
 		<!-- Top logos (220x272) -->
 		<Item Prefab="Image" Name="ClubLogo" X="31" Y="0" Width="220" Height="272" DefaultImage="/assets/home.png"/>
 		<Item Prefab="Image" Name="ClubLogo2" X="773" Y="0" Width="220" Height="272" DefaultImage="/assets/away.png"/>
@@ -31,7 +31,7 @@
 	<!-- A single scene that mimics the "no XML" default board -->
 	<Scene name="GameClockModified" scenename="GameClockModified">
 		<!-- Base panel defines coordinate system (transparent) -->
-		<Item Prefab="Panel" Name="Base" X="0" Y="0" Width="1024" Height="576" ImageColor="0;0;0;0"/>
+		<Item Prefab="Panel" Name="Base" X="0" Y="0" Width="1024" Height="576" ImageColor="0;0;0;255"/>
 		<!-- Top logos (220x272) -->
 		<Item Prefab="Image" Name="ClubLogo" X="41" Y="0" Width="220" Height="272" DefaultImage="/assets/home.png"/>
 		<Item Prefab="Image" Name="ClubLogo2" X="763" Y="0" Width="220" Height="272" DefaultImage="/assets/away.png"/>
@@ -57,3 +57,4 @@
 		<Item Prefab="Text" Name="TOD" X="362" Y="520" Width="300" Height="40" TextAlignment="MiddleCenter" TextColor="189;189;189;255" Font="Droid Sans Mono;28" MinFontSize="12" MaxFontSize="48" DefaultText="00:00:00"/>
 	</Scene>
 </Overlay>
+
