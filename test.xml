@@ -26,7 +26,7 @@
 		<Item Prefab="Text" Name="HomeTeam" X="24" Y="268" Width="300" Height="40" TextAlignment="MiddleLeft" TextColor="211;211;211;255" Font="Droid Sans Mono;28" MinFontSize="12" MaxFontSize="48" DefaultText=""/>
 		<Item Prefab="Text" Name="AwayTeam" X="700" Y="268" Width="300" Height="40" TextAlignment="MiddleRight" TextColor="211;211;211;255" Font="Droid Sans Mono;28" MinFontSize="12" MaxFontSize="48" DefaultText=""/>
 		<!-- Time of day near lower center -->
-		<Item Prefab="Text" Name="TOD" X="362" Y="520" Width="300" Height="80" TextAlignment="MiddleCenter" TextColor="189;189;189;255" Font="Droid Sans Mono;28" MinFontSize="12" MaxFontSize="48" DefaultText="00:00:00"/>
+		<Item Prefab="Text" Name="TOD" X="362" Y="480" Width="300" Height="80" TextAlignment="MiddleCenter" TextColor="189;189;189;255" Font="Droid Sans Mono;28" MinFontSize="12" MaxFontSize="48" DefaultText="00:00:00"/>
 	</Scene>
 	<!-- A single scene that mimics the "no XML" default board -->
 	<Scene name="GameClockModified" scenename="GameClockModified">
@@ -57,6 +57,7 @@
 		<Item Prefab="Text" Name="TOD" X="362" Y="520" Width="300" Height="40" TextAlignment="MiddleCenter" TextColor="189;189;189;255" Font="Droid Sans Mono;28" MinFontSize="12" MaxFontSize="48" DefaultText="00:00:00"/>
 	</Scene>
 </Overlay>
+
 
 
 
